@@ -4,7 +4,7 @@
   "models": [
     {
       "id": "kokoro",
-      "display_name": "Kokoro",
+      "display_name": "Kokoro TTS",
       "modality": "tts",
       "license": "Apache-2.0",
       "min_vram_gb": 0,
