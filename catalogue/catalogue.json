@@ -74,10 +74,10 @@
     },
     {
       "id": "clone-voice",
-      "name": "Clone Voice",
+      "name": "Clone Voice AI",
       "description": "Clone a voice from a short reference audio sample.",
       "modality": "clone",
-      "primary_model_id": "chatterbox AI",
+      "primary_model_id": "chatterbox",
       "icon": "waveform"
     },
     {
