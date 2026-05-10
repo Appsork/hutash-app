@@ -4,7 +4,7 @@
   "models": [
     {
       "id": "kokoro",
-      "display_name": "Kokoro AI",
+      "display_name": "Kokoro",
       "modality": "tts",
       "license": "Apache-2.0",
       "min_vram_gb": 0,
@@ -82,7 +82,7 @@
     },
     {
       "id": "transcribe",
-      "name": "Transcribe AI",
+      "name": "Transcribe",
       "description": "Transcribe audio files to text with optional word-level timestamps.",
       "modality": "stt",
       "primary_model_id": "whisper-large-v3",
