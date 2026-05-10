@@ -65,8 +65,8 @@
       "icon": "microphone"
     },
     {
-      "id": "music AI",
-      "name": "Music",
+      "id": "music",
+      "name": "Music AI",
       "description": "Generate music tracks from a text prompt.",
       "modality": "music",
       "primary_model_id": "ace-step-1.5",
