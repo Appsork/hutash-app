@@ -1,6 +1,40 @@
 {
   "schema_version": 1,
   "generated_at": "2026-05-09T00:00:00Z",
+  "features": [
+    {
+      "id": "voiceover",
+      "name": "Voiceover",
+      "description": "Generate natural-sounding speech from text.",
+      "modality": "tts",
+      "primary_model_id": "kokoro",
+      "icon": "microphone"
+    },
+    {
+      "id": "music",
+      "name": "Music",
+      "description": "Generate music tracks from a text prompt.",
+      "modality": "music",
+      "primary_model_id": "ace-step-1.5",
+      "icon": "music"
+    },
+    {
+      "id": "clone-voice",
+      "name": "Clone Voice",
+      "description": "Clone a voice from a short reference audio sample.",
+      "modality": "clone",
+      "primary_model_id": "chatterbox",
+      "icon": "waveform"
+    },
+    {
+      "id": "transcribe",
+      "name": "Transcribe",
+      "description": "Transcribe audio files to text with optional word-level timestamps.",
+      "modality": "stt",
+      "primary_model_id": "whisper-large-v3",
+      "icon": "file-text"
+    }
+  ],
   "models": [
     {
       "id": "kokoro",
@@ -53,40 +87,6 @@
       "quality_score": 0.90,
       "speed_rating": "medium",
       "requires_aura": "0.1.0"
-    }
-  ],
-  "features": [
-    {
-      "id": "voiceover",
-      "name": "Voiceover",
-      "description": "Generate natural-sounding speech from text.",
-      "modality": "tts",
-      "primary_model_id": "kokoro",
-      "icon": "microphone"
-    },
-    {
-      "id": "music",
-      "name": "Music",
-      "description": "Generate music tracks from a text prompt.",
-      "modality": "music",
-      "primary_model_id": "ace-step-1.5",
-      "icon": "music"
-    },
-    {
-      "id": "clone-voice",
-      "name": "Clone Voice",
-      "description": "Clone a voice from a short reference audio sample.",
-      "modality": "clone",
-      "primary_model_id": "chatterbox",
-      "icon": "waveform"
-    },
-    {
-      "id": "transcribe",
-      "name": "Transcribe",
-      "description": "Transcribe audio files to text with optional word-level timestamps.",
-      "modality": "stt",
-      "primary_model_id": "whisper-large-v3",
-      "icon": "file-text"
     }
   ]
 }
