@@ -43,7 +43,7 @@
     },
     {
       "id": "chatterbox",
-      "display_name": "Chatterbox AI",
+      "display_name": "Chatterbox",
       "modality": "clone",
       "license": "MIT",
       "min_vram_gb": 4.0,
@@ -66,7 +66,7 @@
     },
     {
       "id": "music",
-      "name": "Music AI",
+      "name": "Music",
       "description": "Generate music tracks from a text prompt.",
       "modality": "music",
       "primary_model_id": "ace-step-1.5",
