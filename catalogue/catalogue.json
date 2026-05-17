@@ -59,10 +59,24 @@
       "license": "Apache-2.0",
       "min_vram_gb": 0,
       "disk_size_gb": 0.5,
-      "docker_image": "docker.io/appsork/aura-kokoro:v1.0",
+      "docker_image": "docker.io/appsork/aura-kokoro:1.0",
       "hf_repo": "hexgrad/Kokoro-82M",
       "quality_score": 0.88,
       "speed_rating": "fast",
+      "requires_aura": "0.1.0"
+    },
+    {
+      "id": "parler-tts-mini-1.1",
+      "display_name": "Parler-TTS Mini",
+      "modality": "tts",
+      "license": "Apache-2.0",
+      "min_vram_gb": 4,
+      "disk_size_gb": 27,
+      "docker_image": "docker.io/appsork/aura-parler-tts-mini-1.1:1.0",
+      "docker_image_cpu": "docker.io/appsork/aura-parler-tts-mini-1.1:1.0-cpu",
+      "hf_repo": "parler-tts/parler-tts-mini-v1.1",
+      "quality_score": 0.82,
+      "speed_rating": "slow",
       "requires_aura": "0.1.0"
     },
     {
@@ -72,7 +86,7 @@
       "license": "Apache-2.0",
       "min_vram_gb": 4.0,
       "disk_size_gb": 8.5,
-      "docker_image": "docker.io/appsork/aura-ace-step:v1.5",
+      "docker_image": "docker.io/appsork/aura-ace-step-1.5:1.0",
       "hf_repo": "ACE-Step/ACE-Step-v1",
       "quality_score": 0.92,
       "speed_rating": "fast",
@@ -85,7 +99,7 @@
       "license": "MIT",
       "min_vram_gb": 0,
       "disk_size_gb": 3.1,
-      "docker_image": "docker.io/appsork/aura-whisper:v3",
+      "docker_image": "docker.io/appsork/aura-whisper-large-v3:1.0",
       "hf_repo": "openai/whisper-large-v3",
       "quality_score": 0.95,
       "speed_rating": "medium",
@@ -98,11 +112,26 @@
       "license": "MIT",
       "min_vram_gb": 4.0,
       "disk_size_gb": 2.0,
-      "docker_image": "docker.io/appsork/aura-chatterbox:v0.1.7",
+      "docker_image": "docker.io/appsork/aura-chatterbox:1.0",
+      "docker_image_cpu": "docker.io/appsork/aura-chatterbox:1.0-cpu",
       "hf_repo": "ResembleAI/chatterbox",
       "quality_score": 0.90,
       "speed_rating": "medium",
       "requires_aura": "0.1.0"
+    },
+    {
+      "id": "prompt-engine",
+      "display_name": "Prompt Improver",
+      "modality": "llm",
+      "license": "Apache-2.0",
+      "min_vram_gb": 0,
+      "disk_size_gb": 1.5,
+      "docker_image": "docker.io/appsork/aura-prompt-engine:1.0",
+      "hf_repo": "unsloth/Qwen3-1.7B-GGUF",
+      "quality_score": 0.85,
+      "speed_rating": "medium",
+      "requires_aura": "1.0",
+      "internal": true
     }
   ]
 }
