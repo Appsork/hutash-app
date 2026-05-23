@@ -80,6 +80,20 @@
       "requires_aura": "0.1.0"
     },
     {
+      "id": "dia-1.6b",
+      "display_name": "Dia 1.6B",
+      "modality": "tts",
+      "license": "Apache-2.0",
+      "license_url": "https://huggingface.co/nari-labs/Dia-1.6B-0626",
+      "docker_image": "appsork/aura-dia-1.6b:1.0",
+      "min_vram_gb": 6,
+      "disk_size_gb": 8,
+      "total_install_gb": 10,
+      "quality_score": 0.91,
+      "speed_rating": "medium",
+      "requires_aura": "0.1.0"
+    },
+    {
       "id": "ace-step-1.5",
       "display_name": "ACE-Step 1.5",
       "modality": "music",
