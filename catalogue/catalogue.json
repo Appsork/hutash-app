@@ -82,7 +82,7 @@
     {
       "id": "dia-1.6b",
       "display_name": "Dia 1.6B",
-      "modality": "tts",
+      "modality": "clone",
       "license": "Apache-2.0",
       "min_vram_gb": 6,
       "disk_size_gb": 8,
