@@ -160,6 +160,20 @@
       "speed_rating": "medium",
       "requires_aura": "1.0",
       "internal": true
+    },
+    {
+      "id": "whisper-tiny",
+      "display_name": "Whisper Tiny",
+      "modality": "stt",
+      "license": "MIT",
+      "min_vram_gb": 0,
+      "disk_size_gb": 0.6,
+      "docker_image": "docker.io/appsork/aura-whisper-tiny:1.0",
+      "hf_repo": "Systran/faster-whisper-tiny",
+      "quality_score": 0.65,
+      "speed_rating": "fast",
+      "requires_aura": "0.1.0",
+      "internal": true
     }
   ]
 }
