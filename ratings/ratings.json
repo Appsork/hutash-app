@@ -5,6 +5,7 @@
   "models": {
     "kokoro": {
       "hutash_score": 9.0,
+      "speed_score": 9.8,
       "benchmark": {
         "metric": "UTMOS",
         "raw_score": 4.5,
@@ -19,6 +20,7 @@
     },
     "parler-tts-mini-1.1": {
       "hutash_score": 7.6,
+      "speed_score": 7.0,
       "benchmark": {
         "metric": "UTMOS",
         "raw_score": 3.8,
@@ -33,6 +35,7 @@
     },
     "chatterbox": {
       "hutash_score": 8.2,
+      "speed_score": 7.5,
       "benchmark": {
         "metric": "UTMOS",
         "raw_score": 4.1,
@@ -47,6 +50,7 @@
     },
     "dia-1.6b": {
       "hutash_score": 8.0,
+      "speed_score": 6.5,
       "benchmark": {
         "metric": "UTMOS",
         "raw_score": 4.0,
@@ -61,6 +65,7 @@
     },
     "whisper-large-v3": {
       "hutash_score": 9.7,
+      "speed_score": 7.0,
       "benchmark": {
         "metric": "WER",
         "raw_score": 2.7,
@@ -75,6 +80,7 @@
     },
     "distil-whisper-large-v3": {
       "hutash_score": 9.6,
+      "speed_score": 9.5,
       "benchmark": {
         "metric": "WER",
         "raw_score": 2.85,
@@ -89,6 +95,7 @@
     },
     "whisper-tiny": {
       "hutash_score": 9.4,
+      "speed_score": 9.7,
       "benchmark": {
         "metric": "WER",
         "raw_score": 5.6,
@@ -103,6 +110,7 @@
     },
     "ace-step-1.5": {
       "hutash_score": 8.7,
+      "speed_score": 8.0,
       "benchmark": {
         "metric": "SongEval",
         "raw_score": 4.35,
@@ -117,6 +125,7 @@
     },
     "prompt-engine": {
       "hutash_score": null,
+      "speed_score": null,
       "benchmark": null,
       "note": "Internal tool — not rated",
       "hf_likes": null,
