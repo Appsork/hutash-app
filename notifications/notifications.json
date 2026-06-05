@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-06-06",
+  "notifications": [
+    {
+      "id": "welcome-1.0.0",
+      "type": "announcement",
+      "title": "Welcome to Hutash 1.0.0",
+      "body": "Local AI audio studio. Generate voices, music, and transcripts — free forever.",
+      "action_url": null,
+      "action_label": null,
+      "published_at": "2026-06-06",
+      "expires_at": null
+    }
+  ]
+}
