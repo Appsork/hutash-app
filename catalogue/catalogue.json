@@ -64,7 +64,6 @@
       "ghcr_image": "ghcr.io/appsork/hutash-kokoro:1.0",
       "hf_repo": "hexgrad/Kokoro-82M",
       "quality_score": 0.88,
-      "speed_rating": "fast",
       "requires_aura": "0.1.0"
     },
     {
@@ -81,7 +80,6 @@
       "ghcr_image_cpu": "ghcr.io/appsork/hutash-parler-tts-mini-1.1:1.0-cpu",
       "hf_repo": "parler-tts/parler-tts-mini-v1.1",
       "quality_score": 0.82,
-      "speed_rating": "slow",
       "requires_aura": "0.1.0"
     },
     {
@@ -96,7 +94,6 @@
       "ghcr_image": "ghcr.io/appsork/hutash-dia-1.6b:1.0",
       "hf_repo": "nari-labs/Dia-1.6B-0626",
       "quality_score": 0.91,
-      "speed_rating": "medium",
       "requires_aura": "0.1.0"
     },
     {
@@ -111,7 +108,6 @@
       "ghcr_image": "ghcr.io/appsork/hutash-ace-step-1.5:1.0",
       "hf_repo": "ACE-Step/ACE-Step-v1",
       "quality_score": 0.92,
-      "speed_rating": "fast",
       "requires_aura": "0.1.0"
     },
     {
@@ -128,7 +124,6 @@
       "ghcr_image_cpu": "ghcr.io/appsork/hutash-whisper-large-v3:1.0-cpu",
       "hf_repo": "openai/whisper-large-v3",
       "quality_score": 0.95,
-      "speed_rating": "medium",
       "requires_aura": "0.1.0"
     },
     {
@@ -145,7 +140,6 @@
       "ghcr_image_cpu": "ghcr.io/appsork/hutash-distil-whisper-large-v3:1.0-cpu",
       "hf_repo": "distil-whisper/distil-large-v3",
       "quality_score": 0.94,
-      "speed_rating": "fast",
       "requires_aura": "0.1.0"
     },
     {
@@ -162,7 +156,6 @@
       "ghcr_image_cpu": "ghcr.io/appsork/hutash-chatterbox:1.0-cpu",
       "hf_repo": "ResembleAI/chatterbox",
       "quality_score": 0.90,
-      "speed_rating": "medium",
       "requires_aura": "0.1.0"
     },
     {
@@ -177,7 +170,6 @@
       "ghcr_image": "ghcr.io/appsork/hutash-prompt-engine:1.0",
       "hf_repo": "unsloth/Qwen3-1.7B-GGUF",
       "quality_score": 0.85,
-      "speed_rating": "medium",
       "requires_aura": "1.0",
       "internal": true
     },
@@ -193,7 +185,6 @@
       "ghcr_image": "ghcr.io/appsork/hutash-whisper-tiny:1.0",
       "hf_repo": "Systran/faster-whisper-tiny",
       "quality_score": 0.65,
-      "speed_rating": "fast",
       "requires_aura": "0.1.0",
       "internal": true
     }
