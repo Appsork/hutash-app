@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-06-07",
+  "links": [
+    {
+      "id": "discord",
+      "label": "Discord",
+      "description": "Live help, feedback, and announcements",
+      "url": "https://discord.gg/UTd2PpHsQZ",
+      "icon": "discord",
+      "cta": "Join",
+      "sidebar_shortcut": true
+    },
+    {
+      "id": "youtube",
+      "label": "YouTube",
+      "description": "Tutorials, walkthroughs, and deep dives",
+      "url": "https://youtube.com/@hutash",
+      "icon": "youtube",
+      "cta": "Watch",
+      "sidebar_shortcut": true
+    }
+  ]
+}
