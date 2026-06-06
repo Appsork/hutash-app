@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated_at": "2026-06-07",
+  "updated_at": "2026-06-08",
   "links": [
     {
       "id": "discord",
@@ -19,6 +19,24 @@
       "icon": "youtube",
       "cta": "Watch",
       "sidebar_shortcut": true
+    },
+    {
+      "id": "reddit",
+      "label": "Reddit",
+      "description": "Share workflows, presets, and results",
+      "url": "https://reddit.com/r/hutash",
+      "icon": "reddit",
+      "cta": "Visit",
+      "sidebar_shortcut": false
+    },
+    {
+      "id": "twitter",
+      "label": "X / Twitter",
+      "description": "Product updates and quick tips",
+      "url": "https://x.com/hutashapp",
+      "icon": "twitter",
+      "cta": "Follow",
+      "sidebar_shortcut": false
     }
   ]
 }
