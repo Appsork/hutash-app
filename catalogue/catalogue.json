@@ -1,6 +1,12 @@
 {
   "schema_version": 1,
   "generated_at": "2026-06-02T00:00:00Z",
+  "modalities": {
+    "tts":   { "color": "#A78BFA", "label": "Voiceover",   "subfolder": "voiceover" },
+    "music": { "color": "#F5A78B", "label": "Music",       "subfolder": "music" },
+    "clone": { "color": "#7DD3C0", "label": "Clone Voice", "subfolder": "clone-voice" },
+    "stt":   { "color": "#93C5FD", "label": "Transcribe",  "subfolder": "transcripts" }
+  },
   "features": [
     {
       "id": "voiceover",
