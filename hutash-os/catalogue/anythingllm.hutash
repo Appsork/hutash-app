@@ -16,7 +16,16 @@ ports:
 
 health:
   endpoint: /api/ping
-  start_period_seconds: 30
+  start_period_seconds: 120
+
+# AnythingLLM requires STORAGE_DIR to point at a writable data dir, or it crashes
+# on boot. Persist that dir to a host path so workspaces/accounts survive restarts.
+env_vars:
+  STORAGE_DIR: "/app/server/storage"
+
+mount_paths:
+  - host: "{HUTASH_BASE}/databases/anythingllm"
+    container: /app/server/storage
 
 metadata:
   description: "Private ChatGPT for your documents. RAG, agents, workspaces."

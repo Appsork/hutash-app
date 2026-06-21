@@ -6,20 +6,18 @@ version: "1.0"
 type: app
 license: MIT
 
-# Execution path: a web server run as a container (pre-built GPU image, pulled
-# and run directly — its own entrypoint runs, no pip package/entrypoint).
+# Execution path: a web server run as a container (pre-built image, pulled and
+# run directly — its own entrypoint runs, no pip package/entrypoint). CPU image:
+# the -gpu tag needs special CUDA wiring inside WSL2; the plain tag runs on CPU.
 app_type: web-container
-image: onerahmet/openai-whisper-asr-webservice:latest-gpu
-
-runtime:
-  gpu_required: true
+image: onerahmet/openai-whisper-asr-webservice:latest
 
 ports:
   - internal: 9000
 
 health:
   endpoint: /docs
-  start_period_seconds: 60
+  start_period_seconds: 120
 
 metadata:
   description: "Transcribe audio to text locally using OpenAI Whisper."

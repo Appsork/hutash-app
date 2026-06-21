@@ -39,6 +39,14 @@ health:
   endpoint: /health
   start_period_seconds: 120
 
+# Persist Open WebUI's data dir (accounts, chats, settings) to a host path so it
+# survives container restarts/recreates. A host bind mount is `mount_paths` (the
+# field the engine turns into `-v host:container`, see container_backend._mount_args);
+# the `volumes` key below is a named-volume hint, NOT a host bind.
+mount_paths:
+  - host: "{HUTASH_BASE}/databases/openwebui"
+    container: /app/backend/data
+
 volumes:
   llms: /app/models
 

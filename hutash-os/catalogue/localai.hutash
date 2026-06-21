@@ -6,23 +6,25 @@ version: "2.0"
 type: app
 license: MIT
 
-# Execution path: a web server run as a container (official pre-built GPU image,
+# Execution path: a web server run as a container (official pre-built image,
 # pulled and run directly — its own entrypoint runs, no pip package/entrypoint).
+# CPU image: the GPU image (…-gpu-nvidia-cuda-12) is heavy and needs special CUDA
+# wiring inside WSL2; the plain image runs in CPU mode without that setup.
 app_type: web-container
-image: localai/localai:latest-gpu-nvidia-cuda-12
-
-runtime:
-  gpu_required: true
+image: localai/localai:latest
 
 ports:
   - internal: 8080
 
 health:
   endpoint: /readyz
-  start_period_seconds: 60
+  start_period_seconds: 180
 
-# Shared shelf: the host's shared model store is bind-mounted at /models, so a
-# model downloaded by any app is reused here without re-downloading.
+# Shared shelf: the host's shared model store is bind-mounted at /models (and
+# MODELS_PATH points LocalAI there), so a model downloaded by any app is reused.
+env_vars:
+  MODELS_PATH: "/models"
+
 mount_paths:
   - host: "{HUTASH_BASE}/models"
     container: /models
