@@ -6,12 +6,16 @@ version: "2.0"
 type: app
 license: MIT
 
-# Execution path: a web server run as a container (official pre-built image,
+# Execution path: a web server run as a container (official pre-built GPU image,
 # pulled and run directly — its own entrypoint runs, no pip package/entrypoint).
-# CPU image: the GPU image (…-gpu-nvidia-cuda-12) is heavy and needs special CUDA
-# wiring inside WSL2; the plain image runs in CPU mode without that setup.
+# The GPU image is the one confirmed working (LocalAI v4.4.3 serving on :8080 with
+# the model store bind-mounted): `nerdctl run --gpus all -p 8080:8080
+# -v <base>/models:/models -e MODELS_PATH=/models localai/localai:latest-gpu-nvidia-cuda-12`.
 app_type: web-container
-image: localai/localai:latest
+image: localai/localai:latest-gpu-nvidia-cuda-12
+
+runtime:
+  gpu_required: true
 
 ports:
   - internal: 8080
