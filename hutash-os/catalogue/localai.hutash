@@ -21,7 +21,7 @@ ports:
   - internal: 8080
 
 health:
-  endpoint: /readyz
+  endpoint: /healthz
   start_period_seconds: 180
 
 # Shared shelf: the host's shared model store is bind-mounted at /models (and
