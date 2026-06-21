@@ -1,0 +1,28 @@
+# Whisper ASR — transcribe audio to text locally.
+# .hutash catalogue declaration (read by hutash-os for display, by hutashd for install).
+id: whisper
+name: Whisper ASR
+version: "1.0"
+type: app
+license: MIT
+
+# Execution path: a web server run as a container (pre-built GPU image, pulled
+# and run directly — its own entrypoint runs, no pip package/entrypoint).
+app_type: web-container
+image: onerahmet/openai-whisper-asr-webservice:latest-gpu
+
+runtime:
+  gpu_required: true
+
+ports:
+  - internal: 9000
+
+health:
+  endpoint: /docs
+  start_period_seconds: 60
+
+metadata:
+  description: "Transcribe audio to text locally using OpenAI Whisper."
+  category: audio
+  homepage: https://github.com/ahmetoner/whisper-asr-webservice
+  model_shelf: isolated

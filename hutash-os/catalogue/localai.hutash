@@ -1,0 +1,34 @@
+# LocalAI — drop-in compatible local AI API.
+# .hutash catalogue declaration (read by hutash-os for display, by hutashd for install).
+id: localai
+name: LocalAI
+version: "2.0"
+type: app
+license: MIT
+
+# Execution path: a web server run as a container (official pre-built GPU image,
+# pulled and run directly — its own entrypoint runs, no pip package/entrypoint).
+app_type: web-container
+image: localai/localai:latest-gpu-nvidia-cuda-12
+
+runtime:
+  gpu_required: true
+
+ports:
+  - internal: 8080
+
+health:
+  endpoint: /readyz
+  start_period_seconds: 60
+
+# Shared shelf: the host's shared model store is bind-mounted at /models, so a
+# model downloaded by any app is reused here without re-downloading.
+mount_paths:
+  - host: "{HUTASH_BASE}/models"
+    container: /models
+
+metadata:
+  description: "OpenAI-compatible local AI. LLMs, images, audio on any hardware."
+  category: llm
+  homepage: https://github.com/mudler/LocalAI
+  model_shelf: shared

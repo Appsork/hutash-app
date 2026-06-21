@@ -1,0 +1,77 @@
+# Automatic1111 — the most popular Stable Diffusion web UI.
+# .hutash catalogue declaration (read by hutash-os for display, by hutashd for install).
+id: a1111
+name: Automatic1111
+version: "1.10.1"
+type: app
+license: AGPL-3.0
+
+# Execution path: a GPU desktop app installed and run in a host virtual
+# environment (direct host GPU access). Like ComfyUI/InvokeAI it keeps direct
+# host GPU access rather than running in a container.
+app_type: desktop-venv
+
+description: "The most popular Stable Diffusion web UI. Shares models with ComfyUI automatically."
+
+# Shelf disposition surfaced to the Store: "shared" apps read/write the one
+# model store under <base>/models (a download in ComfyUI is visible here without
+# re-downloading); "isolated" apps keep their own library. A1111 is wired into
+# the shared shelf at install time (extra_model_paths.yaml — see app_manager).
+model_shelf: shared
+
+runtime:
+  python: "3.10"
+  cuda: "12.1"
+  gpu_required: true
+
+# Self-bootstrap: A1111 ships its own installer (launch.py) that pins and pulls
+# its full dependency set (incl. the right CUDA torch build) into a venv. Rather
+# than duplicate/clash with that resolver, we declare NO packages and let A1111
+# install its own deps into OUR venv — it discovers our venv via the VENV_DIR env
+# var, and its pip downloads still flow through the shared uv vault for dedup.
+packages: []
+
+source:
+  type: self-bootstrap
+  url: https://github.com/AUTOMATIC1111/stable-diffusion-webui
+  ref: master
+  bootstrap_cmd: "python launch.py --exit"
+  venv_dir_env_var: "VENV_DIR"
+
+ports:
+  - internal: 7860
+
+health:
+  endpoint: /
+  start_period_seconds: 60
+
+# --no-download-sd-model stops A1111 fetching a default checkpoint on first run
+# (the shared shelf already supplies models); --skip-load-model-at-start lets the
+# server come up (HTTP 200) even with no checkpoint present, so the WebView always
+# loads. A1111 does NOT open a browser by default (only with --autolaunch), so no
+# "disable" flag is needed — passing ComfyUI's --disable-auto-launch makes A1111's
+# argparser abort ("unrecognized arguments").
+entrypoint: python launch.py --listen --port 7860 --no-download-sd-model --skip-load-model-at-start
+
+metadata:
+  description: "The most popular Stable Diffusion web UI with thousands of extensions."
+  category: image-generation
+  homepage: https://github.com/AUTOMATIC1111/stable-diffusion-webui
+  model_shelf: shared
+  shelf_warning: null
+
+# App-specific run/bootstrap environment. A1111 re-runs prepare_environment on
+# EVERY launch, so these must be present at run time too (exported on every start).
+# NOTE: the pip build/binary flags and the setuptools<81 pin are NOT here — they
+# are common to all self-bootstrap apps and live in Pavaka (app_manager:
+# _SELF_BOOTSTRAP_PIP_ENV / _SELF_BOOTSTRAP_TOOLCHAIN). Only app-specific settings
+# remain below.
+#   REQS_FILE — A1111's pinned requirements file launch.py installs from.
+#   STABLE_DIFFUSION_REPO / _COMMIT_HASH — A1111 v1.10.1 pins the now-DELETED
+#     github.com/Stability-AI/stablediffusion (404), so prepare_environment fails
+#     at clone. Point it at the maintained cmdr2 mirror (a faithful `ldm` fork)
+#     and its current HEAD, which A1111 clones + checks out cleanly.
+env:
+  REQS_FILE: "requirements_versions.txt"
+  STABLE_DIFFUSION_REPO: "https://github.com/cmdr2/stablediffusion.git"
+  STABLE_DIFFUSION_COMMIT_HASH: "d55bcd4d31d0316fcbdf552f2fd2628fdc812500"

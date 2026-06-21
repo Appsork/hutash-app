@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "apps": [
+    {
+      "id": "a1111",
+      "file": "a1111.hutash"
+    },
+    {
+      "id": "anythingllm",
+      "file": "anythingllm.hutash"
+    },
+    {
+      "id": "comfyui",
+      "file": "comfyui.hutash"
+    },
+    {
+      "id": "forge",
+      "file": "forge.hutash"
+    },
+    {
+      "id": "invokeai",
+      "file": "invokeai.hutash"
+    },
+    {
+      "id": "localai",
+      "file": "localai.hutash"
+    },
+    {
+      "id": "ollama",
+      "file": "ollama.hutash"
+    },
+    {
+      "id": "openwebui",
+      "file": "openwebui.hutash"
+    },
+    {
+      "id": "rvc",
+      "file": "rvc.hutash"
+    },
+    {
+      "id": "whisper",
+      "file": "whisper.hutash"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+# AnythingLLM — private AI chat over your documents.
+# .hutash catalogue declaration (read by hutash-os for display, by hutashd for install).
+id: anythingllm
+name: AnythingLLM
+version: "1.0"
+type: app
+license: MIT
+
+# Execution path: a web server run as a container (official pre-built image,
+# pulled and run directly — its own entrypoint runs, no pip package/entrypoint).
+app_type: web-container
+image: mintplexlabs/anythingllm:latest
+
+ports:
+  - internal: 3001
+
+health:
+  endpoint: /api/ping
+  start_period_seconds: 30
+
+metadata:
+  description: "Private ChatGPT for your documents. RAG, agents, workspaces."
+  category: llm
+  homepage: https://github.com/Mintplex-Labs/anything-llm
+  model_shelf: isolated

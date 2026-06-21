@@ -1,0 +1,146 @@
+# RVC — Retrieval-based Voice Conversion WebUI.
+# .hutash catalogue declaration (read by hutash-os for display, by hutashd for install).
+id: rvc
+name: RVC
+version: 2.2.0
+type: app
+license: MIT
+
+# Execution path: a GPU desktop app installed and run in a host virtual
+# environment (direct host GPU access), from the packages + git source below.
+# No pre-built `image:` — RVC runs as a host venv, not a container.
+app_type: desktop-venv
+
+runtime:
+  python: "3.10"
+  cuda: "11.8"
+  gpu_required: true
+
+# Mirrors RVC's upstream requirements.txt (RVC-Project, main). A core set is
+# pinned to versions known to work together on Python 3.10 / CUDA 11.8:
+# gradio==3.32.0 (infer-web.py uses the old Gradio `concurrency_count` API that
+# newer Gradio removed, so an unpinned gradio crashes at start), plus
+# Jinja2==3.0.3, numpy==1.23.5, numba==0.56.4, llvmlite==0.39.0, scipy==1.9.3 and
+# librosa==0.9.2, which must move in lockstep.
+#
+# Three pins are load-bearing for the Gradio 3.32 web stack — all verified on
+# Windows/RTX 3060:
+#   * fastapi==0.88 — brings starlette 0.22 + pydantic 1.x. A bare `fastapi`
+#     resolves to a modern fastapi whose new starlette changed the
+#     TemplateResponse signature, which makes Gradio 3.32's localhost
+#     self-check crash (`unhashable type: 'dict'`) and the launch abort.
+#   * gradio_client==0.2.5 — the client paired with gradio 3.32.0; a newer one
+#     drops `media_data`, which gradio 3.32 imports at startup.
+#   * setuptools<81 — setuptools 81 removed the bundled `pkg_resources`, which
+#     librosa 0.9.x imports; an unpinned setuptools resolves to 82+ and crashes.
+# The macOS-only `onnxruntime` from upstream is intentionally omitted: this is a
+# GPU/non-darwin target, so `onnxruntime-gpu` provides the onnxruntime module and
+# installing both would conflict.
+packages:
+  # CUDA build of torch — RVC pulls torch transitively via torchcrepe/torchfcpe,
+  # which on PyPI is the CPU wheel (no GPU). Pinning +cu118 forces the GPU build
+  # from extra_index_urls below. cu118 matches this catalogue's declared CUDA
+  # 11.8 runtime and the numpy 1.23.5 / numba 0.56.4 (Python 3.10) constraints.
+  - torch==2.1.2+cu118
+  - torchaudio==2.1.2+cu118
+  # xFormers and SageAttention are both intentionally omitted on this Windows
+  # desktop-venv (host) path: xFormers has no Windows wheel (any version), so uv
+  # would build it from source (needs nvcc + MSVC) and fail; SageAttention pulls
+  # triton, which has no Windows wheel for the cu118 / torch 2.1.2 stack. RVC does
+  # not use either — it runs on PyTorch's native attention.
+  - aria2
+  - joblib
+  - numba==0.56.4
+  - numpy==1.23.5
+  - scipy==1.9.3
+  - librosa==0.9.2
+  - llvmlite==0.39.0
+  - setuptools<81       # setuptools 81 removed pkg_resources, which librosa imports
+  - fairseq
+  - faiss-cpu
+  - gradio==3.32.0
+  - gradio_client==0.2.5  # paired with gradio 3.32.0 (newer drops media_data)
+  - fastapi==0.88         # brings starlette 0.22 + pydantic 1.x for gradio 3.32
+  - Cython
+  - pydub
+  - soundfile
+  - ffmpeg-python
+  - tensorboardX
+  - Jinja2==3.0.3
+  - json5
+  - Markdown
+  - matplotlib
+  - matplotlib-inline
+  - praat-parselmouth
+  - Pillow
+  - resampy
+  - scikit-learn
+  - tensorboard
+  - tqdm
+  - tornado
+  - Werkzeug
+  - uc-micro-py
+  - sympy
+  - tabulate
+  - PyYAML
+  - pyasn1
+  - pyasn1-modules
+  - fsspec
+  - absl-py
+  - audioread
+  - uvicorn
+  - colorama
+  - pyworld
+  - httpx
+  - onnxruntime-gpu
+  - torchcrepe
+  - torchfcpe
+  - ffmpy
+  - python-dotenv
+  - av
+
+extra_index_urls:
+  - https://download.pytorch.org/whl/cu118
+
+source:
+  type: git
+  url: https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI
+  ref: main
+  path: ""
+
+ports:
+  - internal: 7865
+
+health:
+  endpoint: /
+  start_period_seconds: 30
+
+volumes:
+  audio: assets/weights
+
+# Bind the shared audio-model store into the container at RVC's weights dir, so
+# voice models under the Hutash base are reused rather than re-downloaded.
+mount_paths:
+  - host: "{HUTASH_BASE}/models/audio"
+    container: "/app/assets/weights"
+
+# --noautoopen stops RVC from auto-opening a system browser tab on start, so the
+# app only appears inside the Hutash OS WebView (single-app experience). This is
+# RVC's own flag: infer-web.py launches Gradio with `inbrowser=not
+# config.noautoopen`, and config.py defines --noautoopen (configs/config.py).
+# RVC has no `--no-auto-launch` flag — that would crash its argparse.
+entrypoint: python infer-web.py --port 7865 --noautoopen
+
+metadata:
+  description: Retrieval-based voice conversion with a web interface for training and inference.
+  category: audio
+  homepage: https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI
+
+env:
+  GRADIO_SERVER_NAME: "0.0.0.0"
+  GRADIO_SHARE: "False"
+  JINJA2_CACHE_SIZE: "0"
+  # Belt-and-suspenders against a browser tab: the load-bearing control is the
+  # --noautoopen flag above (RVC passes inbrowser explicitly), but this documents
+  # the intent and disables Gradio's auto-launch where Gradio honours it.
+  GRADIO_AUTO_LAUNCH: "False"

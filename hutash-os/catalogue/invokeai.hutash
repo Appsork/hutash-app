@@ -1,0 +1,70 @@
+# InvokeAI — professional creative suite for Stable Diffusion.
+# .hutash catalogue declaration (read by hutash-os for display, by hutashd for install).
+id: invokeai
+name: InvokeAI
+version: 5.6.0
+type: app
+license: Apache-2.0
+
+# Execution path: a GPU desktop app installed and run in a host virtual
+# environment (direct host GPU access), from the packages + pypi source below.
+# No pre-built `image:` — InvokeAI runs as a host venv, not a container.
+app_type: desktop-venv
+
+runtime:
+  python: "3.11"
+  cuda: "12.1"
+  gpu_required: true
+
+# The [cuda] extra pins the GPU torch stack (torch==2.7.1+cu128,
+# torchvision==0.22.1+cu128); a bare `invokeai` installs the CPU torch and the
+# GPU-required app then refuses to run. cu128's wheels live on the PyTorch index
+# declared in extra_index_urls, not PyPI. InvokeAI itself pins numpy<2.
+packages:
+  - invokeai[cuda]
+  # xFormers is intentionally omitted: it publishes no Windows wheel for any
+  # version, so on this desktop-venv (host) path uv would build it from source —
+  # which needs the CUDA toolkit (nvcc) + MSVC and fails on a normal Windows host.
+  # InvokeAI runs on PyTorch's native attention without it (optional accel).
+
+extra_index_urls:
+  - https://download.pytorch.org/whl/cu128
+
+source:
+  type: pypi
+  url: https://pypi.org/project/InvokeAI/
+  ref: ""
+  path: ""
+
+ports:
+  - internal: 9090
+
+health:
+  endpoint: /api/v1/app/version
+  start_period_seconds: 45
+
+volumes:
+  checkpoints: models/main
+  loras: models/loras
+  vae: models/vae
+
+# Bind the shared model store into the container at InvokeAI's models root, so
+# weights under the Hutash base are reused across apps rather than re-downloaded.
+mount_paths:
+  - host: "{HUTASH_BASE}/models"
+    container: "/invokeai/models"
+
+# invokeai-web takes no --host/--port flags (it accepts only --root/--config);
+# host and port come from config, supplied here via INVOKEAI_* env vars below.
+entrypoint: invokeai-web
+
+metadata:
+  description: Professional creative suite for Stable Diffusion with a unified canvas and node editor.
+  category: image-generation
+  homepage: https://github.com/invoke-ai/InvokeAI
+  model_shelf: isolated
+  shelf_warning: "InvokeAI manages its own model library separately. Models downloaded here are not shared with other apps and require additional storage."
+
+env:
+  INVOKEAI_HOST: "0.0.0.0"
+  INVOKEAI_PORT: "9090"

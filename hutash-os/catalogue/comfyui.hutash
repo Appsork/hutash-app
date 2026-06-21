@@ -1,0 +1,124 @@
+# ComfyUI — node-based diffusion workflow engine.
+# .hutash catalogue declaration (read by hutash-os for display, by hutashd for install).
+id: comfyui
+name: ComfyUI
+version: 0.3.40
+type: app
+license: GPL-3.0
+
+# Execution path: a GPU desktop app installed and run in a host virtual
+# environment (direct host GPU access), built from the packages + git source
+# below. No pre-built `image:` — the ai-dock container images are cloud/vast.ai
+# builds (multi-GB, bundling supervisord/SSH/Jupyter) and their tag scheme is
+# volatile (the old latest-cuda-12.1.0-base-22.04 tag 404s).
+app_type: desktop-venv
+
+runtime:
+  python: "3.12"
+  cuda: "12.1"
+  gpu_required: true
+
+packages:
+  - comfyui-frontend-package
+  - comfyui-workflow-templates
+  - comfyui-embedded-docs
+  # CUDA build of the torch stack — the +cu121 local-version pin forces uv to
+  # resolve these from extra_index_urls below instead of PyPI's CPU-only wheel
+  # (a bare `torch` on Windows installs `+cpu`, so torch.cuda.is_available() is
+  # False and the GPU-required app refuses to run). cu121 (CUDA 12.1 runtime) is
+  # forward-compatible with current NVIDIA drivers and Ampere+ GPUs.
+  - torch==2.5.1+cu121
+  - torchvision==0.20.1+cu121
+  - torchaudio==2.5.1+cu121
+  # Attention acceleration (ARCHITECTURE.md §9), optional — ComfyUI runs on
+  # PyTorch's native attention without these. xFormers is intentionally NOT
+  # listed: it publishes no Windows wheel for any version (PyPI ships Linux-only),
+  # so on this desktop-venv (host) path uv would fall back to building it from
+  # source, which needs the CUDA toolkit (nvcc) + MSVC and fails on a normal
+  # Windows host (ModuleNotFoundError: torch under build isolation). SageAttention
+  # ships a pure-Python wheel (no build, no deps), so it installs cleanly.
+  - sageattention
+  - torchsde
+  - numpy
+  - einops
+  - transformers
+  - tokenizers
+  - sentencepiece
+  - safetensors
+  - aiohttp
+  - yarl
+  - pyyaml
+  - Pillow
+  - scipy
+  - tqdm
+  - psutil
+  - alembic
+  - SQLAlchemy
+  - filelock
+  - av
+  - kornia
+  - spandrel
+  - soundfile
+  - pydantic
+  - pydantic-settings
+  # Runtime imports of recent ComfyUI master not pulled in transitively:
+  - comfy-aimdo          # dynamic VRAM control, imported by main.py
+  - blake3               # asset hashing
+  - requests             # frontend_management
+  - simpleeval           # comfy_extras math nodes
+  - setuptools           # provides pkg_resources for some custom nodes
+
+extra_index_urls:
+  - https://download.pytorch.org/whl/cu121
+
+source:
+  type: git
+  url: https://github.com/comfyanonymous/ComfyUI
+  ref: master
+  path: ""
+
+ports:
+  - internal: 8188
+
+health:
+  endpoint: /system_stats
+  start_period_seconds: 60
+
+volumes:
+  checkpoints: models/checkpoints
+  vae: models/vae
+  loras: models/loras
+  controlnet: models/controlnet
+  clip: models/clip
+  embeddings: models/embeddings
+
+# Bind the shared model store into the container at the path ComfyUI expects, so
+# weights under the Hutash base are reused across apps rather than re-downloaded.
+mount_paths:
+  - host: "{HUTASH_BASE}/models"
+    container: "/app/ComfyUI/models"
+
+# --disable-auto-launch stops ComfyUI from opening a system browser tab on start
+# (it auto-launches in the windows-standalone build; this flag forces it off in
+# every case), so the app only appears inside the Hutash OS WebView.
+entrypoint: python main.py --listen 0.0.0.0 --port 8188 --enable-cors-header --disable-auto-launch
+
+# --enable-cors-header (default origin "*") is what lets the Hutash OS WebView
+# (localhost:1422) call the ComfyUI API (localhost:8188), including model
+# downloads. In ComfyUI's server.py the middleware is an either/or: when
+# --enable-cors-header is set it installs the CORS middleware and SKIPS
+# create_origin_only_middleware — and that origin-only middleware is the *sole*
+# source of the "request with non matching host and origin … returning 403"
+# error. So this one flag both adds the Access-Control-Allow-Origin header and
+# disables the host/origin 403 check. Verified live: a cross-origin request from
+# localhost:1422 returns 200 with `Access-Control-Allow-Origin: *`.
+#
+# Do NOT add --disable-xss-check: no such flag exists in ComfyUI, and startup
+# parses argv with argparse.parse_args(), which aborts on an unknown flag — it
+# would stop the app from launching at all. There is also no COMFYUI_CORS_HEADERS
+# env var; ComfyUI reads CORS only from the flag above.
+
+metadata:
+  description: Node-based interface for building Stable Diffusion and other diffusion model workflows.
+  category: image-generation
+  homepage: https://github.com/comfyanonymous/ComfyUI

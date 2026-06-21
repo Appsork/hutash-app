@@ -1,0 +1,69 @@
+# Stable Diffusion WebUI Forge — a faster, memory-efficient A1111 fork.
+# .hutash catalogue declaration (read by hutash-os for display, by hutashd for install).
+id: forge
+name: Stable Diffusion WebUI Forge
+version: "2.0"
+type: app
+license: AGPL-3.0
+
+# Execution path: a GPU desktop app installed and run in a host virtual
+# environment (direct host GPU access) — same host-venv path as A1111 (Forge is
+# an A1111 fork).
+app_type: desktop-venv
+
+# Shared shelf: Forge reads/writes the one model store under <base>/models, so a
+# checkpoint downloaded in ComfyUI/A1111 is visible here without re-downloading
+# (wired via extra_model_paths.yaml at install time — see app_manager).
+model_shelf: shared
+
+runtime:
+  python: "3.10"
+  cuda: "12.1"
+  gpu_required: true
+
+# Self-bootstrap: Forge (like A1111) ships its own launch.py installer that pins
+# and pulls its full dependency set into a venv. We declare NO packages and let
+# Forge install its own deps into OUR venv — discovered via the VENV_DIR env var,
+# with pip downloads flowing through the shared uv vault for dedup.
+packages: []
+
+source:
+  type: self-bootstrap
+  url: https://github.com/lllyasviel/stable-diffusion-webui-forge
+  ref: main
+  bootstrap_cmd: "python launch.py --exit"
+  venv_dir_env_var: "VENV_DIR"
+
+ports:
+  - internal: 7861
+
+health:
+  endpoint: /
+  start_period_seconds: 60
+
+# Forge shares A1111's launch args: --no-download-sd-model skips fetching a default
+# checkpoint (the shared shelf supplies models); --skip-load-model-at-start lets
+# the server come up (HTTP 200) without a checkpoint so the WebView always loads.
+# Forge does not open a browser by default, so no "disable" flag is needed —
+# A1111-family argparsers reject ComfyUI's --disable-auto-launch.
+entrypoint: python launch.py --listen --port 7861 --no-download-sd-model --skip-load-model-at-start
+
+metadata:
+  description: "Forge is a faster, more memory-efficient fork of A1111 optimized for SDXL and Flux."
+  category: image-generation
+  homepage: https://github.com/lllyasviel/stable-diffusion-webui-forge
+  model_shelf: shared
+  shelf_warning: null
+
+# App-specific run/bootstrap environment. The pip build/binary flags and the
+# setuptools<81 pin are NOT here — they are common to all self-bootstrap apps and
+# live in Pavaka (app_manager: _SELF_BOOTSTRAP_PIP_ENV / _SELF_BOOTSTRAP_TOOLCHAIN).
+#   REQS_FILE — the pinned requirements file launch.py installs from.
+#   STABLE_DIFFUSION_REPO / _COMMIT_HASH — like A1111, the upstream installer pins
+#     the now-DELETED github.com/Stability-AI/stablediffusion; point it at the
+#     maintained cmdr2 `ldm` mirror + its current HEAD so prepare_environment
+#     clones cleanly. (Forge re-runs prepare_environment on every launch.)
+env:
+  REQS_FILE: "requirements_versions.txt"
+  STABLE_DIFFUSION_REPO: "https://github.com/cmdr2/stablediffusion.git"
+  STABLE_DIFFUSION_COMMIT_HASH: "d55bcd4d31d0316fcbdf552f2fd2628fdc812500"

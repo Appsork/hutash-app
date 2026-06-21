@@ -1,0 +1,36 @@
+# Ollama — run LLMs locally.
+# .hutash catalogue declaration (read by hutash-os for display, by hutashd for install).
+id: ollama
+name: Ollama
+version: "0.9.0"
+type: app
+license: MIT
+
+# Execution path: a web server run as a container. The official pre-built image
+# is pulled and run directly (its own entrypoint runs), so there is no pip
+# package or entrypoint to declare — the image is self-contained.
+app_type: web-container
+image: ollama/ollama:latest
+
+runtime:
+  gpu_required: true
+
+ports:
+  - internal: 11434
+
+health:
+  endpoint: /
+  start_period_seconds: 30
+
+metadata:
+  description: "Run LLMs locally. Pull Llama, Mistral, Gemma with one command."
+  category: llm
+  homepage: https://github.com/ollama/ollama
+  model_shelf: isolated
+  shelf_warning: "Ollama manages its own model storage separately."
+
+# Ollama keeps its model store at OLLAMA_MODELS. hutashd also wires this
+# automatically at install time (app_manager.setup_model_shelf), pointing it at
+# the shared base; declared here too for clarity.
+env_vars:
+  OLLAMA_MODELS: "{HUTASH_BASE}/models/ollama"

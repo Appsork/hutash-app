@@ -1,0 +1,50 @@
+# Open WebUI — extensible self-hosted interface for LLMs.
+# .hutash catalogue declaration (read by hutash-os for display, by hutashd for install).
+id: openwebui
+name: Open WebUI
+version: 0.6.5
+type: app
+license: BSD-3-Clause
+
+# Execution path: a web server installed and run as a container. The official
+# pre-built image is pulled and run directly (installs in minutes, not hours);
+# its own default entrypoint runs, so packages/source/entrypoint below are not
+# consulted for the container — they remain for the no-runtime venv fallback.
+app_type: web-container
+image: ghcr.io/open-webui/open-webui:main
+
+# runtime.python pins the interpreter the engine builds the venv with. hutashd
+# passes it straight to `uv venv --python <ver>` (app_manager.install_spec ->
+# uv_backend.create_environment), so this is an enforced pin, not a hint.
+# Open WebUI requires Python >=3.11,<3.13 — 3.11 is the safe, supported floor.
+# Without it the engine's host Python (e.g. 3.13) is used and imports break.
+runtime:
+  python: "3.11"
+  cuda: ""
+  gpu_required: false
+
+packages:
+  - open-webui
+
+source:
+  type: pypi
+  url: https://pypi.org/project/open-webui/
+  ref: ""
+  path: ""
+
+ports:
+  - internal: 8080
+
+health:
+  endpoint: /health
+  start_period_seconds: 120
+
+volumes:
+  llms: /app/models
+
+entrypoint: open-webui serve --host 0.0.0.0 --port 8080
+
+metadata:
+  description: Extensible, self-hosted web interface for running and chatting with local and remote LLMs.
+  category: llm
+  homepage: https://github.com/open-webui/open-webui
