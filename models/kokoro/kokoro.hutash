@@ -1,0 +1,125 @@
+# Kokoro — Hutash model spec
+#
+# Self-contained build spec for the weights-out Hutash engine. There is no
+# base image anymore, so every package the model needs — including the ones
+# Kokoro previously inherited from appsork/hutash-inference-cpu:1.1 — is
+# listed explicitly below.
+#
+# EVERY version pin here is copied verbatim from the verified, shipped
+# Dockerfiles. Do not change a pin without re-verifying against:
+#   - models/kokoro/Dockerfile                 (FROM appsork/hutash-inference-cpu:1.1)
+#   - docker/base/inference-cpu/Dockerfile     (FROM appsork/hutash-base-cpu:1.0 + hutash_inference/)
+#   - docker/base/cpu/Dockerfile               (FROM python:3.11-slim + torch/torchaudio)
+# Packages left unpinned (soundfile, uvicorn, fastapi) are unpinned in the
+# Kokoro Dockerfile — left unpinned here so we don't introduce a version the
+# image was never tested against.
+
+hutash_version: "1.0"
+
+id: kokoro
+display_name: Kokoro
+version: 1.0.2
+runtime: container
+category: model
+license: Apache-2.0
+
+# --- Build environment ---------------------------------------------------
+# FROM python:3.11-slim (docker/base/cpu/Dockerfile). CPU-only model — no
+# CUDA, no GPU. Env vars are the union of every ENV set across the three
+# Dockerfile layers.
+environment:
+  python: "3.11"
+  cuda: null
+  gpu_required: false
+  variables:
+    PYTHONPATH: /app                 # docker/base/inference-cpu/Dockerfile
+    HF_HUB_CACHE: /weights           # models/kokoro/Dockerfile (weights-out)
+    HF_HUB_OFFLINE: "1"              # models/kokoro/Dockerfile (weights-out)
+    PORT: "8000"                     # models/kokoro/Dockerfile
+
+# --- System packages (apt-get) -------------------------------------------
+# build-essential/git/curl from the base layer; espeak-ng/curl from Kokoro.
+# espeak-ng is the phonemizer backend misaki[en] hard-requires at runtime.
+system_packages:
+  - build-essential                  # docker/base/cpu/Dockerfile  (build-time)
+  - git                              # docker/base/cpu/Dockerfile  (build-time)
+  - curl                             # docker/base/cpu + kokoro     (runtime, healthcheck)
+  - espeak-ng                        # models/kokoro/Dockerfile     (runtime, G2P backend)
+
+# --- Python packages -----------------------------------------------------
+# Exact union of base-image pins + Kokoro pins. torch/torchaudio MUST come
+# from the PyTorch CPU wheel index — the default PyPI build pulls CUDA.
+packages:
+  # base layer — docker/base/cpu/Dockerfile (CPU wheel index)
+  - name: torch==2.11.0
+    index_url: https://download.pytorch.org/whl/cpu
+  - name: torchaudio==2.11.0
+    index_url: https://download.pytorch.org/whl/cpu
+  # Kokoro layer — models/kokoro/Dockerfile (PyPI default index)
+  - name: kokoro==0.9.4
+  - name: soundfile                  # unpinned in Dockerfile — kept unpinned
+  - name: uvicorn                    # unpinned in Dockerfile — kept unpinned
+  - name: fastapi                    # unpinned in Dockerfile — kept unpinned
+  # spaCy English G2P model — baked for full offline operation. Exact wheel
+  # the Dockerfile pins (en_core_web_sm 3.8.0 for spaCy 3.8.x).
+  - name: en_core_web_sm==3.8.0
+    url: https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+
+# --- Application source ---------------------------------------------------
+# Shipped alongside this spec. hutash_inference/ is the shared HTTP shell
+# (copied to hutash-app root); inference.py + manifest.json are the model's.
+source:
+  upstream_repo: https://github.com/hexgrad/kokoro
+  inference: models/kokoro/inference.py
+  manifest: models/kokoro/manifest.json
+  shell: hutash_inference/
+
+# --- Weights (weights-out) -----------------------------------------------
+# Copied verbatim from catalogue.json. Downloaded at install time into the
+# host weights cache, mounted at /weights, read offline (HF_HUB_OFFLINE=1).
+weights:
+  external: true
+  hf_repo: hexgrad/Kokoro-82M
+  hf_revision: f3ff3571791e39611d31c381e3a41a3af07b4987
+  allow_patterns:
+    - config.json
+    - kokoro-v1_0.pth
+    - voices/*.pt
+
+# --- Networking ----------------------------------------------------------
+# All containers listen on internal 8000; host port is assigned at install
+# time by docker_manager. Never hardcode the host port.
+port: 8000
+
+# --- Health check --------------------------------------------------------
+# Mirrors the Dockerfile HEALTHCHECK directive exactly.
+health:
+  path: /health
+  interval: 10s
+  timeout: 5s
+  retries: 3
+
+# --- Entrypoint ----------------------------------------------------------
+# Verbatim from the Dockerfile CMD.
+entrypoint:
+  - uvicorn
+  - --factory
+  - hutash_inference.server:create_app
+  - --host
+  - 0.0.0.0
+  - --port
+  - "8000"
+
+# --- Metadata ------------------------------------------------------------
+metadata:
+  modality: tts
+  weight_category: audio
+  min_vram_gb: 0
+  disk_size_gb: 1.0
+  supports_cpu: true
+  creator:
+    name: hexgrad
+    url: https://github.com/hexgrad
+  description: >-
+    Natural-sounding text-to-speech with multiple voice presets and
+    speaking styles.
