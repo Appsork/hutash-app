@@ -1,0 +1,121 @@
+# Dia 1.6B — Hutash model spec
+#
+# Self-contained build spec for the weights-out Hutash engine. compute: gpu —
+# GPU only (upstream CPU inference is not yet available; there is no Dockerfile.cpu).
+# All CUDA packages are untagged (single GPU variant).
+#
+# EVERY version pin is copied verbatim from the verified, shipped Dockerfile:
+#   - models/dia-1.6b/Dockerfile               (FROM appsork/hutash-inference-gpu:1.1)
+# NOTE: Dia pins a DIFFERENT torch stack than the shared GPU base — torch
+# 2.12.0+cu126 / torchaudio 2.11.0+cu126 (CUDA 12.6 wheel channel), reinstalled
+# over the base. The optimize-layer xformers/triton (built for the base torch
+# 2.11.0+cu128) are therefore intentionally OMITTED here — Dia does not import
+# them and the torch mismatch would make them unsafe.
+#
+# CAVEAT — baked secondary dependency NOT captured here: the Dockerfile bakes the
+# descript/dac_44khz audio codec (revision c1bc521685adf9cfe247bc39a5ca58917eda1ac4,
+# allow_patterns config.json/model.safetensors/preprocessor_config.json) into
+# /app/dac. The Dia processor needs it offline; the single `weights` block cannot
+# express a second repo — stage it separately before running offline.
+
+hutash_version: "1.0"
+
+id: dia-1.6b
+display_name: Dia 1.6B
+version: 1.0.1
+runtime: container
+category: model
+compute: gpu
+license: Apache-2.0
+
+# --- Build environment ---------------------------------------------------
+# CUDA 12.6 wheel channel (torch +cu126). GPU mandatory.
+environment:
+  python: "3.11"
+  cuda: "12.6"
+  variables:
+    PYTHONPATH: /app
+    HF_HUB_CACHE: /weights
+    HF_HUB_OFFLINE: "1"
+    PORT: "8000"
+
+# --- System packages (apt-get) -------------------------------------------
+# libsndfile1 backs soundfile; ffmpeg decodes reference-clip formats soundfile
+# can't open natively; curl for the healthcheck.
+system_packages:
+  - build-essential                  # docker/base/*  (build-time)
+  - git                              # docker/base/*  (build-time)
+  - ffmpeg                           # models/dia-1.6b/Dockerfile (audio decode)
+  - libsndfile1                      # models/dia-1.6b/Dockerfile (soundfile backend)
+  - curl                             # healthcheck probe
+
+# --- Python packages -----------------------------------------------------
+# Exact pins from models/dia-1.6b/Dockerfile (Layer 2). torch 2.12.0+cu126.
+packages:
+  - name: torch==2.12.0+cu126
+    index_url: https://download.pytorch.org/whl/cu126
+  - name: torchaudio==2.11.0+cu126
+    index_url: https://download.pytorch.org/whl/cu126
+  - name: transformers==5.9.0       # includes DiaForConditionalGeneration
+  - name: soundfile==0.13.1
+  - name: scipy==1.14.1
+  - name: numpy==2.2.6
+  - name: uvicorn==0.47.0
+  - name: fastapi==0.136.1
+  - name: python-multipart==0.0.29
+
+# --- Application source ---------------------------------------------------
+source:
+  upstream_repo: https://huggingface.co/nari-labs/Dia-1.6B-0626
+  inference: models/dia-1.6b/inference.py
+  manifest: models/dia-1.6b/manifest.json
+  shell: hutash_inference/
+
+# --- Weights (weights-out) -----------------------------------------------
+weights:
+  external: true
+  hf_repo: nari-labs/Dia-1.6B-0626
+  hf_revision: ef2795fcc29c5abe6ffc91fd33808588b49bbc66
+  allow_patterns:
+    - config.json
+    - generation_config.json
+    - model-00001-of-00002.safetensors
+    - model-00002-of-00002.safetensors
+    - model.safetensors.index.json
+    - preprocessor_config.json
+    - tokenizer_config.json
+    - special_tokens_map.json
+    - audio_tokenizer_config.json
+
+# --- Networking ----------------------------------------------------------
+port: 8000
+
+# --- Health check --------------------------------------------------------
+health:
+  path: /health
+  interval: 10s
+  timeout: 5s
+  retries: 3
+
+# --- Entrypoint ----------------------------------------------------------
+entrypoint:
+  - uvicorn
+  - --factory
+  - hutash_inference.server:create_app
+  - --host
+  - 0.0.0.0
+  - --port
+  - "8000"
+
+# --- Metadata ------------------------------------------------------------
+metadata:
+  modality: clone
+  weight_category: audio
+  min_vram_gb: 6
+  disk_size_gb: 17.2
+  supports_cpu: false
+  creator:
+    name: Nari Labs
+    url: https://huggingface.co/nari-labs
+  description: >-
+    Multi-speaker dialogue TTS with in-context voice cloning and nonverbal cues.

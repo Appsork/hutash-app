@@ -21,6 +21,7 @@ display_name: Kokoro
 version: 1.0.2
 runtime: container
 category: model
+compute: cpu
 license: Apache-2.0
 
 # --- Build environment ---------------------------------------------------
@@ -30,7 +31,6 @@ license: Apache-2.0
 environment:
   python: "3.11"
   cuda: null
-  gpu_required: false
   variables:
     PYTHONPATH: /app                 # docker/base/inference-cpu/Dockerfile
     HF_HUB_CACHE: /weights           # models/kokoro/Dockerfile (weights-out)

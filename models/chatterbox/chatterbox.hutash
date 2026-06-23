@@ -1,0 +1,137 @@
+# Chatterbox — Hutash model spec
+#
+# Self-contained build spec for the weights-out Hutash engine. Every package is
+# listed explicitly. compute: any — the engine picks the GPU or CPU variant from
+# host hardware and installs only the matching wheels (variant: gpu / variant: cpu).
+#
+# EVERY version pin is copied verbatim from the verified, shipped Dockerfiles:
+#   - models/chatterbox/Dockerfile             (GPU; FROM appsork/hutash-inference-gpu:1.1)
+#   - models/chatterbox/Dockerfile.cpu         (CPU; FROM appsork/hutash-inference-cpu:1.1)
+#   - docker/base/gpu/Dockerfile               (torch 2.11.0+cu128, CUDA 12.8 base)
+#   - docker/base/optimize/Dockerfile          (xformers + triton on the GPU base)
+#   - docker/base/cpu/Dockerfile               (torch 2.11.0+cpu)
+# The model-specific pins are IDENTICAL across the GPU and CPU Dockerfiles; only
+# the torch stack (and the GPU optimize layer) differ by variant.
+
+hutash_version: "1.0"
+
+id: chatterbox
+display_name: Chatterbox
+version: 1.0.1
+runtime: container
+category: model
+compute: any
+license: MIT
+
+# --- Build environment ---------------------------------------------------
+# GPU variant: nvidia/cuda 12.8 base. CPU variant: python:3.11-slim.
+environment:
+  python: "3.11"
+  cuda: "12.8"
+  variables:
+    PYTHONPATH: /app
+    HF_HUB_CACHE: /weights
+    HF_HUB_OFFLINE: "1"
+    PORT: "8000"
+
+# --- System packages (apt-get) -------------------------------------------
+system_packages:
+  - build-essential                  # docker/base/*  (build-time)
+  - git                              # base + Dockerfile.cpu (VCS pip deps)
+  - curl                             # healthcheck probe
+
+# --- Python packages -----------------------------------------------------
+# torch stack: GPU cu128 wheels (variant: gpu) + the optimize-layer xformers/
+# triton; CPU wheels (variant: cpu). Everything else is common to both variants.
+packages:
+  # --- GPU base (docker/base/gpu + optimize) ---
+  - name: torch==2.11.0+cu128
+    index_url: https://download.pytorch.org/whl/cu128
+    variant: gpu
+  - name: torchaudio==2.11.0+cu128
+    index_url: https://download.pytorch.org/whl/cu128
+    variant: gpu
+  - name: xformers                   # docker/base/optimize/Dockerfile
+    variant: gpu
+  - name: triton                     # docker/base/optimize/Dockerfile
+    variant: gpu
+  # --- CPU base (docker/base/cpu) ---
+  - name: torch==2.11.0+cpu
+    index_url: https://download.pytorch.org/whl/cpu
+    variant: cpu
+  - name: torchaudio==2.11.0+cpu
+    index_url: https://download.pytorch.org/whl/cpu
+    variant: cpu
+  # --- Model-specific (identical GPU/CPU pins) ---
+  # chatterbox-tts is installed --no-deps in the Dockerfile so its torch<=2.6
+  # pin can't override the base torch; its real deps are the explicit pins below.
+  - name: chatterbox-tts==0.1.7
+  - name: "numpy>=2.0.0"
+  - name: librosa==0.11.0
+  - name: s3tokenizer
+  - name: transformers==5.2.0
+  - name: diffusers==0.29.0
+  - name: "resemble-perth>=1.0.0"
+  - name: conformer==0.3.2
+  - name: safetensors==0.5.3
+  - name: spacy-pkuseg
+  - name: pykakasi==2.3.0
+  - name: pyloudnorm
+  - name: omegaconf
+  - name: uvicorn==0.44.0
+  - name: fastapi==0.136.0
+  - name: python-multipart==0.0.26
+  - name: soundfile==0.13.1
+
+# --- Application source ---------------------------------------------------
+source:
+  upstream_repo: https://huggingface.co/ResembleAI/chatterbox
+  inference: models/chatterbox/inference.py
+  manifest: models/chatterbox/manifest.json
+  shell: hutash_inference/
+
+# --- Weights (weights-out) -----------------------------------------------
+# Copied verbatim from catalogue.json.
+weights:
+  external: true
+  hf_repo: ResembleAI/chatterbox
+  hf_revision: ef85ce7bef2f3f1a74d0d837d379d2fcb68203cd
+  allow_patterns:
+    - ve.safetensors
+    - t3_cfg.safetensors
+    - s3gen.safetensors
+    - tokenizer.json
+    - conds.pt
+
+# --- Networking ----------------------------------------------------------
+port: 8000
+
+# --- Health check --------------------------------------------------------
+health:
+  path: /health
+  interval: 10s
+  timeout: 5s
+  retries: 3
+
+# --- Entrypoint ----------------------------------------------------------
+entrypoint:
+  - uvicorn
+  - --factory
+  - hutash_inference.server:create_app
+  - --host
+  - 0.0.0.0
+  - --port
+  - "8000"
+
+# --- Metadata ------------------------------------------------------------
+metadata:
+  modality: clone
+  weight_category: audio
+  min_vram_gb: 4.0
+  disk_size_gb: 10.8
+  supports_cpu: true
+  creator:
+    name: Resemble AI
+    url: https://huggingface.co/ResembleAI
+  description: >-
+    Voice cloning from a 5–30 second reference audio clip.

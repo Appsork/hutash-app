@@ -1,0 +1,98 @@
+# Prompt Improver (prompt-engine) — Hutash model spec
+#
+# Self-contained build spec for the weights-out Hutash engine. Every package is
+# listed explicitly — there is no base image anymore.
+#
+# EVERY version pin is copied verbatim from the verified, shipped Dockerfile:
+#   - models/prompt-engine/Dockerfile          (FROM appsork/hutash-inference-cpu:1.1)
+#   - docker/base/cpu/Dockerfile               (FROM python:3.11-slim, system deps)
+# Invisible infrastructure LLM (Qwen3 1.7B GGUF via llama-cpp-python). CPU-only;
+# no torch (llama.cpp is the runtime).
+
+hutash_version: "1.0"
+
+id: prompt-engine
+display_name: Prompt Improver
+version: 1.0.1
+runtime: container
+category: model
+compute: cpu
+license: Apache-2.0
+
+# --- Build environment ---------------------------------------------------
+# FROM python:3.11-slim. CPU-only model — no CUDA.
+environment:
+  python: "3.11"
+  cuda: null
+  variables:
+    PYTHONPATH: /app                 # docker/base/inference-cpu/Dockerfile
+    HF_HUB_CACHE: /weights           # models/prompt-engine/Dockerfile (weights-out)
+    HF_HUB_OFFLINE: "1"              # models/prompt-engine/Dockerfile (weights-out)
+    PORT: "8000"                     # models/prompt-engine/Dockerfile
+
+# --- System packages (apt-get) -------------------------------------------
+# build-essential — llama-cpp-python compiles its native extension when no
+# prebuilt wheel matches. git from base; curl for the healthcheck probe.
+system_packages:
+  - build-essential                  # models/prompt-engine + docker/base/cpu (native build)
+  - git                              # docker/base/cpu/Dockerfile  (build-time)
+  - curl                             # models/prompt-engine/Dockerfile (healthcheck probe)
+
+# --- Python packages -----------------------------------------------------
+# Exact pins from models/prompt-engine/Dockerfile (Layer 2). Pins captured
+# 2026-04-23 from the running production container.
+packages:
+  - name: llama-cpp-python==0.3.20
+  - name: uvicorn==0.44.0
+  - name: fastapi==0.136.0
+
+# --- Application source ---------------------------------------------------
+source:
+  upstream_repo: https://huggingface.co/Qwen/Qwen3-1.7B
+  inference: models/prompt-engine/inference.py
+  manifest: models/prompt-engine/manifest.json
+  shell: hutash_inference/
+
+# --- Weights (weights-out) -----------------------------------------------
+# Copied verbatim from catalogue.json. The GGUF is downloaded at install time
+# into the host weights cache, mounted at /weights, read offline.
+weights:
+  external: true
+  hf_repo: unsloth/Qwen3-1.7B-GGUF
+  hf_revision: d7f544eead698dbd1f15126ef60b45a1e1933222
+  allow_patterns:
+    - Qwen3-1.7B-Q4_K_M.gguf
+
+# --- Networking ----------------------------------------------------------
+port: 8000
+
+# --- Health check --------------------------------------------------------
+health:
+  path: /health
+  interval: 10s
+  timeout: 5s
+  retries: 3
+
+# --- Entrypoint ----------------------------------------------------------
+entrypoint:
+  - uvicorn
+  - --factory
+  - hutash_inference.server:create_app
+  - --host
+  - 0.0.0.0
+  - --port
+  - "8000"
+
+# --- Metadata ------------------------------------------------------------
+metadata:
+  modality: llm
+  weight_category: LLM
+  min_vram_gb: 0
+  disk_size_gb: 1.6
+  supports_cpu: true
+  internal: true
+  creator:
+    name: Qwen
+    url: https://huggingface.co/Qwen
+  description: >-
+    Internal prompt-improvement LLM (Qwen3 1.7B GGUF).

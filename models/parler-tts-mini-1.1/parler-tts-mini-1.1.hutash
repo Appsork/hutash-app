@@ -1,0 +1,128 @@
+# Parler-TTS Mini 1.1 — Hutash model spec
+#
+# Self-contained build spec for the weights-out Hutash engine. compute: any —
+# the engine picks the GPU or CPU variant from host hardware.
+#
+# EVERY version pin is copied verbatim from the verified, shipped Dockerfiles:
+#   - models/parler-tts-mini-1.1/Dockerfile      (GPU; FROM appsork/hutash-inference-gpu:1.1)
+#   - models/parler-tts-mini-1.1/Dockerfile.cpu  (CPU; FROM appsork/hutash-inference-cpu:1.1)
+#   - docker/base/gpu + optimize                 (torch 2.11.0+cu128, xformers, triton)
+#   - docker/base/cpu                            (torch 2.11.0+cpu)
+# Model-specific pins are IDENTICAL across GPU/CPU; only the torch stack differs.
+#
+# CAVEAT — baked secondary dependency NOT captured here: the Dockerfile bakes the
+# google/flan-t5-large TOKENIZER (revision 0613663d0d48ea86ba8cb3d7a44f0f65dc596a2a,
+# allow_patterns config.json/tokenizer_config.json/tokenizer.json/spiece.model/
+# special_tokens_map.json) into /app/flan-t5-tokenizer. Parler's
+# description_tokenizer loads it offline; without it the container fails under
+# HF_HUB_OFFLINE=1. The single `weights` block below cannot express a second repo
+# — this must be staged separately before this model runs offline.
+
+hutash_version: "1.0"
+
+id: parler-tts-mini-1.1
+display_name: Parler-TTS Mini
+version: 1.0.1
+runtime: container
+category: model
+compute: any
+license: Apache-2.0
+
+# --- Build environment ---------------------------------------------------
+environment:
+  python: "3.11"
+  cuda: "12.8"
+  variables:
+    PYTHONPATH: /app
+    HF_HUB_CACHE: /weights
+    HF_HUB_OFFLINE: "1"
+    PORT: "8000"
+
+# --- System packages (apt-get) -------------------------------------------
+system_packages:
+  - build-essential                  # docker/base/*  (build-time)
+  - git                              # docker/base/*  (build-time)
+  - curl                             # healthcheck probe
+
+# --- Python packages -----------------------------------------------------
+packages:
+  # --- GPU base (docker/base/gpu + optimize) ---
+  - name: torch==2.11.0+cu128
+    index_url: https://download.pytorch.org/whl/cu128
+    variant: gpu
+  - name: torchaudio==2.11.0+cu128
+    index_url: https://download.pytorch.org/whl/cu128
+    variant: gpu
+  - name: xformers                   # docker/base/optimize/Dockerfile
+    variant: gpu
+  - name: triton                     # docker/base/optimize/Dockerfile
+    variant: gpu
+  # --- CPU base (docker/base/cpu) ---
+  - name: torch==2.11.0+cpu
+    index_url: https://download.pytorch.org/whl/cpu
+    variant: cpu
+  - name: torchaudio==2.11.0+cpu
+    index_url: https://download.pytorch.org/whl/cpu
+    variant: cpu
+  # --- Model-specific (identical GPU/CPU pins) ---
+  - name: parler-tts==0.2.3
+  - name: transformers==4.46.1
+  - name: soundfile==0.13.1
+  - name: uvicorn==0.44.0
+  - name: fastapi==0.136.0
+  - name: python-multipart==0.0.26
+
+# --- Application source ---------------------------------------------------
+source:
+  upstream_repo: https://huggingface.co/parler-tts/parler-tts-mini-v1.1
+  inference: models/parler-tts-mini-1.1/inference.py
+  manifest: models/parler-tts-mini-1.1/manifest.json
+  shell: hutash_inference/
+
+# --- Weights (weights-out) -----------------------------------------------
+weights:
+  external: true
+  hf_repo: parler-tts/parler-tts-mini-v1.1
+  hf_revision: fbb2dd281092c5b414ef29cf9d8895f386f1feef
+  allow_patterns:
+    - config.json
+    - generation_config.json
+    - model.safetensors
+    - preprocessor_config.json
+    - special_tokens_map.json
+    - tokenizer.json
+    - tokenizer.model
+    - tokenizer_config.json
+
+# --- Networking ----------------------------------------------------------
+port: 8000
+
+# --- Health check --------------------------------------------------------
+health:
+  path: /health
+  interval: 10s
+  timeout: 5s
+  retries: 3
+
+# --- Entrypoint ----------------------------------------------------------
+entrypoint:
+  - uvicorn
+  - --factory
+  - hutash_inference.server:create_app
+  - --host
+  - 0.0.0.0
+  - --port
+  - "8000"
+
+# --- Metadata ------------------------------------------------------------
+metadata:
+  modality: tts
+  weight_category: audio
+  min_vram_gb: 4
+  disk_size_gb: 11.1
+  supports_cpu: true
+  creator:
+    name: parler-tts
+    url: https://huggingface.co/parler-tts
+  description: >-
+    Describe a voice in plain English — gender, tone, pace, recording quality.

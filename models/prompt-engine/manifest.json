@@ -1,0 +1,90 @@
+{
+  "__generated_note__": "__AURA_GENERATED__ This file was generated from model.meta.yaml + Dockerfile LABELs by dev/scripts/generate-model-files.py. Do not edit directly \u2014 edit model.meta.yaml or Dockerfile and regenerate.",
+  "model_id": "prompt-engine",
+  "display_name": "Prompt Improver",
+  "image": "docker.io/appsork/hutash-prompt-engine:1.0",
+  "license": {
+    "spdx": "Apache-2.0",
+    "url": "https://github.com/QwenLM/Qwen3/blob/main/LICENSE",
+    "commercial_ok": true,
+    "attribution_required": false,
+    "attribution_text": null
+  },
+  "capabilities": {
+    "improve": {
+      "label": "Improve Prompt",
+      "description": "Rewrite a user's prompt for better generation results",
+      "primary": true,
+      "endpoint": "/generate",
+      "status_message": "Improving prompt\u2026",
+      "inputs": {
+        "prompt": {
+          "type": "string",
+          "label": "User prompt",
+          "required": true
+        },
+        "system": {
+          "type": "string",
+          "label": "System prompt",
+          "required": false
+        }
+      },
+      "controls": {
+        "max_tokens": {
+          "type": "slider",
+          "label": "Max response length (tokens)",
+          "min": 16,
+          "max": 2048,
+          "step": 16,
+          "default": 256,
+          "advanced": true
+        },
+        "temperature": {
+          "type": "slider",
+          "label": "Sampling temperature",
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.05,
+          "default": 0.7,
+          "advanced": true
+        }
+      },
+      "outputs": {
+        "response": {
+          "type": "text"
+        }
+      }
+    }
+  },
+  "hardware": {
+    "min_vram_gb": 0,
+    "recommended_vram_gb": 0,
+    "supports_cpu": true,
+    "total_install_gb": 2
+  },
+  "labels": {
+    "hutash.model.name": "prompt-engine",
+    "hutash.model.version": "1.0.0",
+    "hutash.inference.version": "1.2.0"
+  },
+  "tagline": "Qwen3 1.7B GGUF \u2014 invisible infrastructure for prompt improvement",
+  "description": "Small LLM (Qwen3 1.7B, Q4_K_M quantised GGUF) that runs on CPU via\nllama-cpp-python. Aura uses it behind the scenes to improve user\nprompts for image/audio/music generation. Not user-facing: no UI\ncontrols, no model browser entry \u2014 invisible system component.\n",
+  "creator": {
+    "name": "Qwen Team (Alibaba)",
+    "url": "https://github.com/QwenLM/Qwen3"
+  },
+  "source": {
+    "upstream_repo": "https://github.com/QwenLM/Qwen3",
+    "huggingface_repo": "unsloth/Qwen3-1.7B-GGUF"
+  },
+  "notes": [
+    "Invisible infrastructure \u2014 NOT listed in catalogue.py, NOT shown in the model browser. Installed during first-launch onboarding as a \"system component\". See CLAUDE.md \"LLM Runtime \u2014 Non-Negotiable\".",
+    "GGUF weights baked into image at build time via hf_hub_download (unsloth/Qwen3-1.7B-GGUF \u2014 Q4_K_M quantisation, ~1.1 GB).",
+    "Uses Qwen3's `/no_think` sentinel to skip chain-of-thought blocks and save the token budget for the actual response.",
+    "Container listens on internal port 8000 (universal Aura convention); the host port is assigned dynamically at install time and stored in the model_ports table, like every other model. improver.py resolves it via storage.get_model_port."
+  ],
+  "api": {
+    "health": "/health",
+    "gpu": false
+  }
+}

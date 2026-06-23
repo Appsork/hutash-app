@@ -1,0 +1,101 @@
+# Distil-Whisper Large v3 — Hutash model spec
+#
+# Self-contained build spec for the weights-out Hutash engine. compute: any —
+# the engine picks GPU or CPU from host hardware.
+#
+# EVERY version pin is copied verbatim from the verified, shipped Dockerfiles:
+#   - models/distil-whisper-large-v3/Dockerfile      (GPU; FROM appsork/hutash-inference-gpu:1.1)
+#   - models/distil-whisper-large-v3/Dockerfile.cpu  (CPU; FROM appsork/hutash-inference-cpu:1.1)
+# faster-whisper / CTranslate2 backend — NO torch in either variant. The GPU and
+# CPU Dockerfiles install IDENTICAL pip packages; the only difference is the base
+# image (a CUDA runtime for CT2 GPU vs. a slim Python base for CT2 CPU), driven
+# by `compute: any` + `cuda` below. NOTE: CT2 GPU needs cuDNN, which the original
+# GPU image got from its cudnn-runtime base — verify the engine's CUDA base
+# provides it (or stage nvidia-cudnn) before relying on GPU acceleration.
+
+hutash_version: "1.0"
+
+id: distil-whisper-large-v3
+display_name: Distil-Whisper Large v3
+version: 1.0.1
+runtime: container
+category: model
+compute: any
+license: MIT
+
+# --- Build environment ---------------------------------------------------
+environment:
+  python: "3.11"
+  cuda: "12.8"
+  variables:
+    PYTHONPATH: /app
+    HF_HUB_CACHE: /weights
+    HF_HUB_OFFLINE: "1"
+    PORT: "8000"
+
+# --- System packages (apt-get) -------------------------------------------
+system_packages:
+  - build-essential                  # docker/base/*  (build-time)
+  - git                              # docker/base/*  (build-time)
+  - curl                             # healthcheck probe
+
+# --- Python packages -----------------------------------------------------
+# Exact pins from Dockerfile (Layer 2) — identical in Dockerfile.cpu. CTranslate2
+# backend, no torch. ctranslate2 stays transitive (faster-whisper allows >=4,<5).
+packages:
+  - name: faster-whisper==1.2.1
+  - name: uvicorn==0.47.0
+  - name: fastapi==0.136.1
+  - name: python-multipart==0.0.29
+
+# --- Application source ---------------------------------------------------
+source:
+  upstream_repo: https://huggingface.co/Systran/faster-distil-whisper-large-v3
+  inference: models/distil-whisper-large-v3/inference.py
+  manifest: models/distil-whisper-large-v3/manifest.json
+  shell: hutash_inference/
+
+# --- Weights (weights-out) -----------------------------------------------
+weights:
+  external: true
+  hf_repo: Systran/faster-distil-whisper-large-v3
+  hf_revision: c3058b475261292e64a0412df1d2681c06260fab
+  allow_patterns:
+    - config.json
+    - model.bin
+    - tokenizer.json
+    - vocabulary.json
+    - preprocessor_config.json
+
+# --- Networking ----------------------------------------------------------
+port: 8000
+
+# --- Health check --------------------------------------------------------
+health:
+  path: /health
+  interval: 10s
+  timeout: 5s
+  retries: 3
+
+# --- Entrypoint ----------------------------------------------------------
+entrypoint:
+  - uvicorn
+  - --factory
+  - hutash_inference.server:create_app
+  - --host
+  - 0.0.0.0
+  - --port
+  - "8000"
+
+# --- Metadata ------------------------------------------------------------
+metadata:
+  modality: stt
+  weight_category: audio
+  min_vram_gb: 0
+  disk_size_gb: 8.7
+  supports_cpu: true
+  creator:
+    name: Systran
+    url: https://huggingface.co/Systran
+  description: >-
+    Faster distilled Whisper. Near-v3 accuracy at a fraction of the size.

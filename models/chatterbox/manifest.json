@@ -1,0 +1,277 @@
+{
+  "__generated_note__": "__AURA_GENERATED__ This file was generated from model.meta.yaml + Dockerfile LABELs by dev/scripts/generate-model-files.py. Do not edit directly \u2014 edit model.meta.yaml or Dockerfile and regenerate.",
+  "model_id": "chatterbox",
+  "display_name": "Chatterbox",
+  "image": "docker.io/appsork/hutash-chatterbox:0.1",
+  "license": {
+    "spdx": "MIT",
+    "url": "https://github.com/resemble-ai/chatterbox/blob/master/LICENSE",
+    "commercial_ok": true,
+    "attribution_required": false,
+    "attribution_text": null
+  },
+  "capabilities": {
+    "voice-clone": {
+      "label": "Clone Voice",
+      "description": "Generate speech in the voice of an uploaded reference audio sample",
+      "primary": true,
+      "endpoint": "/clone",
+      "status_message": "Cloning voice\u2026",
+      "modality": "clone",
+      "timeout_seconds": 120,
+      "inputs": {
+        "text": {
+          "type": "string",
+          "role": "prompt",
+          "label": "Text to clone",
+          "description": "The phrase the cloned voice will say",
+          "max_length": 500,
+          "required": true,
+          "clear_after_generate": true
+        },
+        "file": {
+          "type": "audio_file",
+          "label": "Reference voice sample",
+          "description": "5\u201330 second audio clip of the target voice",
+          "accept": [
+            "audio/*",
+            "wav",
+            "mp3",
+            "m4a",
+            "flac",
+            "ogg",
+            "webm"
+          ],
+          "required": true
+        }
+      },
+      "controls": {
+        "exaggeration": {
+          "type": "slider",
+          "label": "Emotion intensity",
+          "min": 0.25,
+          "max": 1.5,
+          "step": 0.05,
+          "unit": "\u00d7",
+          "default": 0.5,
+          "advanced": false
+        },
+        "cfg_weight": {
+          "type": "slider",
+          "label": "Speaking pace",
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.05,
+          "default": 0.5,
+          "advanced": false
+        },
+        "language_id": {
+          "type": "dropdown",
+          "label": "Synthesis language",
+          "description": "Target language for synthesis",
+          "options": [
+            "English",
+            "French",
+            "German",
+            "Spanish",
+            "Chinese",
+            "Japanese",
+            "Korean",
+            "Italian",
+            "Portuguese",
+            "Dutch",
+            "Russian",
+            "Arabic",
+            "Turkish",
+            "Hindi",
+            "Polish"
+          ],
+          "default": "English",
+          "advanced": true,
+          "implementation_status": "stub"
+        },
+        "seed": {
+          "type": "number",
+          "role": "seed",
+          "label": "Voice seed",
+          "description": "Random seed; -1 for random",
+          "default": -1,
+          "null_label": "Random",
+          "advanced": true
+        },
+        "temperature": {
+          "type": "slider",
+          "label": "Temperature",
+          "description": "Sampling temperature",
+          "min": 0.1,
+          "max": 2.0,
+          "step": 0.05,
+          "default": 0.8,
+          "advanced": true
+        },
+        "max_new_tokens": {
+          "type": "slider",
+          "label": "Max tokens",
+          "description": "Maximum tokens to generate",
+          "min": 64,
+          "max": 4096,
+          "step": 64,
+          "unit": "tokens",
+          "default": 4096,
+          "advanced": true
+        }
+      },
+      "outputs": {
+        "audio": {
+          "type": "wav",
+          "role": "primary",
+          "sample_rate": 24000
+        }
+      }
+    },
+    "tts": {
+      "label": "Text to Speech",
+      "description": "Generate speech in Chatterbox's default voice (no reference needed)",
+      "primary": false,
+      "endpoint": "/tts",
+      "timeout_seconds": 120,
+      "inputs": {
+        "text": {
+          "type": "string",
+          "role": "prompt",
+          "label": "Text to speak (Chatterbox)",
+          "max_length": 500,
+          "required": true
+        }
+      },
+      "controls": {
+        "exaggeration": {
+          "type": "slider",
+          "label": "Chatterbox emotion intensity",
+          "min": 0.25,
+          "max": 1.5,
+          "step": 0.05,
+          "unit": "\u00d7",
+          "default": 0.5,
+          "advanced": false
+        },
+        "cfg_weight": {
+          "type": "slider",
+          "label": "Chatterbox speaking pace",
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.05,
+          "default": 0.5,
+          "advanced": false
+        },
+        "language_id": {
+          "type": "dropdown",
+          "label": "Chatterbox synthesis language",
+          "description": "Target language for synthesis",
+          "options": [
+            "English",
+            "French",
+            "German",
+            "Spanish",
+            "Chinese",
+            "Japanese",
+            "Korean",
+            "Italian",
+            "Portuguese",
+            "Dutch",
+            "Russian",
+            "Arabic",
+            "Turkish",
+            "Hindi",
+            "Polish"
+          ],
+          "default": "English",
+          "advanced": true,
+          "implementation_status": "stub"
+        },
+        "seed": {
+          "type": "number",
+          "role": "seed",
+          "label": "Chatterbox voice seed",
+          "description": "Random seed; -1 for random",
+          "default": -1,
+          "null_label": "Random",
+          "advanced": true
+        },
+        "temperature": {
+          "type": "slider",
+          "label": "Chatterbox temperature",
+          "description": "Sampling temperature",
+          "min": 0.1,
+          "max": 2.0,
+          "step": 0.05,
+          "default": 0.8,
+          "advanced": true
+        },
+        "max_new_tokens": {
+          "type": "slider",
+          "label": "Chatterbox max tokens",
+          "description": "Maximum tokens to generate",
+          "min": 64,
+          "max": 4096,
+          "step": 64,
+          "unit": "tokens",
+          "default": 4096,
+          "advanced": true
+        }
+      },
+      "outputs": {
+        "audio": {
+          "type": "wav",
+          "role": "primary",
+          "sample_rate": 24000
+        }
+      }
+    }
+  },
+  "hardware": {
+    "min_vram_gb": 6,
+    "recommended_vram_gb": 8,
+    "supports_cpu": false,
+    "total_install_gb": 12
+  },
+  "labels": {
+    "hutash.model.name": "chatterbox",
+    "hutash.model.version": "0.1.7",
+    "hutash.runtime.torch": "2.11.0",
+    "hutash.runtime.cuda": "12.8.0"
+  },
+  "tagline": "Chatterbox voice cloning \u2014 GPU container for Aura",
+  "description": "Chatterbox clones voices from a short reference audio sample\n(5\u201330 seconds) and synthesizes speech in that voice. Also exposes\na secondary TTS capability (no reference needed) for a default voice.\n",
+  "creator": {
+    "name": "Resemble AI",
+    "url": "https://resemble.ai"
+  },
+  "source": {
+    "upstream_repo": "https://github.com/resemble-ai/chatterbox",
+    "huggingface_repo": "ResembleAI/chatterbox"
+  },
+  "notes": [
+    "Requires GPU (~6 GB VRAM minimum). Shares the cu128 torch layer with ACE-Step at build time for cross-image dedup, but chatterbox-tts==0.1.7 has a hard torch<=2.6.0 pin that causes pip to uninstall torch 2.11.0+cu128 and install torch 2.6.0+cu124 instead. The shared-base dedup is still worth preserving at the layer SHA level. Labels reflect RUNTIME reality (2.6.0+cu124, CUDA 12.4), not the shared-base pin.",
+    "Weights baked at build time via ChatterboxTTS.from_pretrained (library-internal HF loader; cannot be split further).",
+    "1 advanced control remains stubbed on both capabilities: language_id. chatterbox-tts 0.1.7 has no multilingual synthesis hook \u2014 only English is produced regardless of the dropdown selection. Wiring will follow if upstream exposes a per-call language switch.",
+    "flow_cfg_scale was REMOVED entirely (was previously declared as a stub). The upstream flow-matching stage (S3Gen.inference and CausalConditionalCFM.forward) accepts no CFG parameter in chatterbox-tts 0.1.7 \u2014 it only takes `temperature` and `n_timesteps`. The previously-declared control was unreachable in any version of the API. Will reconsider if upstream adds a flow-stage CFG hook.",
+    "max_new_tokens, seed, and temperature are all wired in inference.py. The wiring required reimplementing ChatterboxTTS.generate() body locally because upstream hardcodes `max_new_tokens=1000` with an explicit `# TODO: use the value in config` comment. See `_generate_audio` in inference.py for the upstream-equivalent body with the literal parameterised.",
+    "Both capabilities use multipart/form-data. voice-clone requires a reference audio file; tts does not."
+  ],
+  "improve": {
+    "default": "natural",
+    "strategies": [
+      {
+        "id": "natural",
+        "label": "Natural speech",
+        "instruction": "Improve grammar, pacing, and clarity for natural voice synthesis. Add commas for breath pauses. Return only the text to be spoken."
+      }
+    ]
+  },
+  "api": {
+    "health": "/health",
+    "gpu": true
+  },
+  "layout": "aggregator-3panel"
+}

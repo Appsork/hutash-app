@@ -1,0 +1,112 @@
+# ACE-Step 1.5 — Hutash model spec
+#
+# Self-contained build spec for the weights-out Hutash engine. compute: gpu —
+# GPU only. All CUDA packages are untagged (single GPU variant).
+#
+# EVERY version pin is copied verbatim from the verified, shipped Dockerfile:
+#   - models/ace-step-1.5/Dockerfile           (FROM appsork/hutash-inference-gpu:1.1)
+#   - docker/base/gpu + optimize               (torch 2.11.0+cu128, xformers, triton)
+# torch stack is cu128 (matches the shared GPU base), so the optimize-layer
+# xformers/triton are kept. torchvision (not in the base) is added at the matching
+# cu128 wheel.
+#
+# UNUSUAL — the ACE-Step pipeline is installed from a pinned GitHub commit via a
+# `git+https://…@<sha>` VCS spec (PyPI has no matching release). `git` is in
+# system_packages for this. In the Dockerfile torchvision is force-reinstalled
+# --no-deps after the ACE-Step install (which otherwise pulls a CPU torchvision
+# off PyPI and breaks `torchvision::nms`); listing the cu128 torchvision wheel
+# here pins it directly so that drift can't happen.
+
+hutash_version: "1.0"
+
+id: ace-step-1.5
+display_name: ACE-Step 1.5
+version: 1.0.1
+runtime: container
+category: model
+compute: gpu
+license: Apache-2.0
+
+# --- Build environment ---------------------------------------------------
+# CUDA 12.8 base (torch +cu128). GPU mandatory.
+environment:
+  python: "3.11"
+  cuda: "12.8"
+  variables:
+    PYTHONPATH: /app
+    HF_HUB_CACHE: /weights
+    HF_HUB_OFFLINE: "1"
+    PORT: "8000"
+
+# --- System packages (apt-get) -------------------------------------------
+# git — required for the git+https ACE-Step install below; curl — healthcheck.
+system_packages:
+  - build-essential                  # docker/base/*  (build-time)
+  - git                              # models/ace-step-1.5/Dockerfile (git+https install)
+  - curl                             # healthcheck probe
+
+# --- Python packages -----------------------------------------------------
+# Exact pins from models/ace-step-1.5/Dockerfile (Layer 2). torch/torchvision
+# cu128; xformers/triton from the optimize base; ACE-Step from a pinned commit.
+packages:
+  - name: torch==2.11.0+cu128
+    index_url: https://download.pytorch.org/whl/cu128
+  - name: torchaudio==2.11.0+cu128
+    index_url: https://download.pytorch.org/whl/cu128
+  - name: torchvision==0.26.0+cu128
+    index_url: https://download.pytorch.org/whl/cu128
+  - name: xformers                   # docker/base/optimize/Dockerfile
+  - name: triton                     # docker/base/optimize/Dockerfile
+  # ACE-Step pipeline — pinned to a specific main-branch commit SHA.
+  - name: git+https://github.com/ace-step/ACE-Step.git@1bee4c9f5b43e30995f8d4d33b3919197ce1bd68
+  - name: uvicorn==0.44.0
+  - name: fastapi==0.136.0
+  - name: soundfile==0.13.1
+
+# --- Application source ---------------------------------------------------
+source:
+  upstream_repo: https://huggingface.co/ACE-Step/ACE-Step-v1-3.5B
+  inference: models/ace-step-1.5/inference.py
+  manifest: models/ace-step-1.5/manifest.json
+  shell: hutash_inference/
+
+# --- Weights (weights-out) -----------------------------------------------
+# Copied verbatim from catalogue.json. ACE-Step declares no allow_patterns —
+# the full snapshot is fetched.
+weights:
+  external: true
+  hf_repo: ACE-Step/ACE-Step-v1-3.5B
+  hf_revision: 82cd0d7b6322bd28cd4e830fe675ddb6180ce36c
+
+# --- Networking ----------------------------------------------------------
+port: 8000
+
+# --- Health check --------------------------------------------------------
+health:
+  path: /health
+  interval: 10s
+  timeout: 5s
+  retries: 3
+
+# --- Entrypoint ----------------------------------------------------------
+entrypoint:
+  - uvicorn
+  - --factory
+  - hutash_inference.server:create_app
+  - --host
+  - 0.0.0.0
+  - --port
+  - "8000"
+
+# --- Metadata ------------------------------------------------------------
+metadata:
+  modality: music
+  weight_category: audio
+  min_vram_gb: 4.0
+  disk_size_gb: 15.8
+  supports_cpu: false
+  creator:
+    name: ACE-Step
+    url: https://huggingface.co/ACE-Step
+  description: >-
+    Music generation from text prompts. Stems, lyrics, and tempo control.

@@ -1,0 +1,104 @@
+# Whisper Tiny — Hutash model spec
+#
+# Self-contained build spec for the weights-out Hutash engine. There is no
+# base image anymore, so every package the model needs is listed explicitly.
+#
+# EVERY version pin is copied verbatim from the verified, shipped Dockerfile:
+#   - models/whisper-tiny/Dockerfile           (FROM appsork/hutash-inference-cpu:1.1)
+#   - docker/base/cpu/Dockerfile               (FROM python:3.11-slim, system deps)
+# CPU-only invisible STT infrastructure (faster-whisper / CTranslate2, INT8).
+# The CT2 backend needs NO torch — it is deliberately omitted (the inference-cpu
+# base ships torch but this model never imports it).
+
+hutash_version: "1.0"
+
+id: whisper-tiny
+display_name: Whisper Tiny
+version: 1.0.1
+runtime: container
+category: model
+compute: cpu
+license: MIT
+
+# --- Build environment ---------------------------------------------------
+# FROM python:3.11-slim. CPU-only model — no CUDA.
+environment:
+  python: "3.11"
+  cuda: null
+  variables:
+    PYTHONPATH: /app                 # docker/base/inference-cpu/Dockerfile
+    HF_HUB_CACHE: /weights           # models/whisper-tiny/Dockerfile (weights-out)
+    HF_HUB_OFFLINE: "1"              # models/whisper-tiny/Dockerfile (weights-out)
+    PORT: "8000"                     # models/whisper-tiny/Dockerfile
+
+# --- System packages (apt-get) -------------------------------------------
+# build-essential/git from docker/base/cpu; curl from whisper-tiny (healthcheck).
+system_packages:
+  - build-essential                  # docker/base/cpu/Dockerfile  (build-time)
+  - git                              # docker/base/cpu/Dockerfile  (build-time)
+  - curl                             # models/whisper-tiny/Dockerfile (healthcheck probe)
+
+# --- Python packages -----------------------------------------------------
+# Exact pins from models/whisper-tiny/Dockerfile (Layer 2). CTranslate2 backend,
+# no torch. uvicorn/fastapi/python-multipart serve the hutash_inference shell.
+packages:
+  - name: faster-whisper==1.2.1
+  - name: uvicorn==0.47.0
+  - name: fastapi==0.136.1
+  - name: python-multipart==0.0.29
+
+# --- Application source ---------------------------------------------------
+source:
+  upstream_repo: https://huggingface.co/Systran/faster-whisper-tiny
+  inference: models/whisper-tiny/inference.py
+  manifest: models/whisper-tiny/manifest.json
+  shell: hutash_inference/
+
+# --- Weights (weights-out) -----------------------------------------------
+# Copied verbatim from catalogue.json. Downloaded at install time into the
+# host weights cache, mounted at /weights, read offline (HF_HUB_OFFLINE=1).
+weights:
+  external: true
+  hf_repo: Systran/faster-whisper-tiny
+  hf_revision: d90ca5fe260221311c53c58e660288d3deb8d356
+  allow_patterns:
+    - config.json
+    - model.bin
+    - tokenizer.json
+    - vocabulary.txt
+
+# --- Networking ----------------------------------------------------------
+port: 8000
+
+# --- Health check --------------------------------------------------------
+# Mirrors the Dockerfile HEALTHCHECK directive.
+health:
+  path: /health
+  interval: 10s
+  timeout: 5s
+  retries: 3
+
+# --- Entrypoint ----------------------------------------------------------
+# Verbatim from the Dockerfile CMD.
+entrypoint:
+  - uvicorn
+  - --factory
+  - hutash_inference.server:create_app
+  - --host
+  - 0.0.0.0
+  - --port
+  - "8000"
+
+# --- Metadata ------------------------------------------------------------
+metadata:
+  modality: stt
+  weight_category: audio
+  min_vram_gb: 0
+  disk_size_gb: 0.7
+  supports_cpu: true
+  internal: true
+  creator:
+    name: Systran
+    url: https://huggingface.co/Systran
+  description: >-
+    Lightweight transcription model. Fast and efficient for basic use cases.
