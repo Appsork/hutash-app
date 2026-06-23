@@ -32,7 +32,6 @@ license: Apache-2.0
 # CUDA 12.6 wheel channel (torch +cu126). GPU mandatory.
 environment:
   python: "3.11"
-  cuda: "12.6"
   variables:
     PYTHONPATH: /app
     HF_HUB_CACHE: /weights

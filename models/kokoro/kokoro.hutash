@@ -30,7 +30,6 @@ license: Apache-2.0
 # Dockerfile layers.
 environment:
   python: "3.11"
-  cuda: null
   variables:
     PYTHONPATH: /app                 # docker/base/inference-cpu/Dockerfile
     HF_HUB_CACHE: /weights           # models/kokoro/Dockerfile (weights-out)

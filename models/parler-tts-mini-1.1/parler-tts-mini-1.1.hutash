@@ -31,7 +31,6 @@ license: Apache-2.0
 # --- Build environment ---------------------------------------------------
 environment:
   python: "3.11"
-  cuda: "12.8"
   variables:
     PYTHONPATH: /app
     HF_HUB_CACHE: /weights

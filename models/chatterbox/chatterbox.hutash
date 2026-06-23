@@ -27,7 +27,6 @@ license: MIT
 # GPU variant: nvidia/cuda 12.8 base. CPU variant: python:3.11-slim.
 environment:
   python: "3.11"
-  cuda: "12.8"
   variables:
     PYTHONPATH: /app
     HF_HUB_CACHE: /weights

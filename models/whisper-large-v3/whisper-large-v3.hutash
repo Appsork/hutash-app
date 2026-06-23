@@ -6,12 +6,11 @@
 # EVERY version pin is copied verbatim from the verified, shipped Dockerfiles:
 #   - models/whisper-large-v3/Dockerfile      (GPU; FROM appsork/hutash-inference-gpu:1.1)
 #   - models/whisper-large-v3/Dockerfile.cpu  (CPU; FROM appsork/hutash-inference-cpu:1.1)
-# faster-whisper / CTranslate2 backend — NO torch in either variant. The GPU and
-# CPU Dockerfiles install IDENTICAL pip packages; the only difference is the base
-# image (a CUDA runtime for CT2 GPU vs. a slim Python base for CT2 CPU), driven
-# by `compute: any` + `cuda` below. NOTE: CT2 GPU needs cuDNN, which the original
-# GPU image got from its cudnn-runtime base — verify the engine's CUDA base
-# provides it (or stage nvidia-cudnn) before relying on GPU acceleration.
+# faster-whisper / CTranslate2 backend — NO torch in either variant. Both
+# variants build on python:3.11-slim (the engine no longer selects a CUDA base
+# image). CT2 GPU needs cuDNN, which the cudnn-runtime base used to provide; it
+# is now installed from pip as a variant: gpu package (nvidia-cudnn-cu12). The
+# CPU variant omits it.
 
 hutash_version: "1.0"
 
@@ -26,7 +25,6 @@ license: MIT
 # --- Build environment ---------------------------------------------------
 environment:
   python: "3.11"
-  cuda: "12.8"
   variables:
     PYTHONPATH: /app
     HF_HUB_CACHE: /weights
@@ -47,6 +45,10 @@ packages:
   - name: uvicorn==0.47.0
   - name: fastapi==0.136.1
   - name: python-multipart==0.0.29
+  # CT2 GPU acceleration needs cuDNN; with no CUDA base image it comes from pip.
+  # GPU variant only — the CPU variant runs CT2 on the slim Python base.
+  - name: nvidia-cudnn-cu12
+    variant: gpu
 
 # --- Application source ---------------------------------------------------
 source:

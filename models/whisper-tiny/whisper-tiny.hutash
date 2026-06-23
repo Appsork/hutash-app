@@ -24,7 +24,6 @@ license: MIT
 # FROM python:3.11-slim. CPU-only model — no CUDA.
 environment:
   python: "3.11"
-  cuda: null
   variables:
     PYTHONPATH: /app                 # docker/base/inference-cpu/Dockerfile
     HF_HUB_CACHE: /weights           # models/whisper-tiny/Dockerfile (weights-out)
