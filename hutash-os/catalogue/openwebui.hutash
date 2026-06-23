@@ -20,7 +20,6 @@ image: ghcr.io/open-webui/open-webui:main
 # Without it the engine's host Python (e.g. 3.13) is used and imports break.
 runtime:
   python: "3.11"
-  cuda: ""
   gpu_required: false
 
 packages:

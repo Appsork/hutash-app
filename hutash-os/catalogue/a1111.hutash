@@ -21,7 +21,6 @@ model_shelf: shared
 
 runtime:
   python: "3.10"
-  cuda: "12.1"
   gpu_required: true
 
 # Self-bootstrap: A1111 ships its own installer (launch.py) that pins and pulls

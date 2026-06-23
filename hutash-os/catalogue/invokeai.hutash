@@ -13,7 +13,6 @@ app_type: desktop-venv
 
 runtime:
   python: "3.11"
-  cuda: "12.1"
   gpu_required: true
 
 # The [cuda] extra pins the GPU torch stack (torch==2.7.1+cu128,

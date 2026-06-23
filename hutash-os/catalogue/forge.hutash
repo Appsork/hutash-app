@@ -18,7 +18,6 @@ model_shelf: shared
 
 runtime:
   python: "3.10"
-  cuda: "12.1"
   gpu_required: true
 
 # Self-bootstrap: Forge (like A1111) ships its own launch.py installer that pins
