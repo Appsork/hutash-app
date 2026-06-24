@@ -52,16 +52,6 @@ source:
   manifest: models/prompt-engine/manifest.json
   shell: hutash_inference/
 
-# --- Weights (weights-out) -----------------------------------------------
-# Copied verbatim from catalogue.json. The GGUF is downloaded at install time
-# into the host weights cache, mounted at /weights, read offline.
-weights:
-  external: true
-  hf_repo: unsloth/Qwen3-1.7B-GGUF
-  hf_revision: d7f544eead698dbd1f15126ef60b45a1e1933222
-  allow_patterns:
-    - Qwen3-1.7B-Q4_K_M.gguf
-
 # --- Networking ----------------------------------------------------------
 port: 8000
 

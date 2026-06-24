@@ -69,14 +69,6 @@ source:
   manifest: models/ace-step-1.5/manifest.json
   shell: hutash_inference/
 
-# --- Weights (weights-out) -----------------------------------------------
-# Copied verbatim from catalogue.json. ACE-Step declares no allow_patterns —
-# the full snapshot is fetched.
-weights:
-  external: true
-  hf_repo: ACE-Step/ACE-Step-v1-3.5B
-  hf_revision: 82cd0d7b6322bd28cd4e830fe675ddb6180ce36c
-
 # --- Networking ----------------------------------------------------------
 port: 8000
 

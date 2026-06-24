@@ -53,19 +53,6 @@ source:
   manifest: models/whisper-tiny/manifest.json
   shell: hutash_inference/
 
-# --- Weights (weights-out) -----------------------------------------------
-# Copied verbatim from catalogue.json. Downloaded at install time into the
-# host weights cache, mounted at /weights, read offline (HF_HUB_OFFLINE=1).
-weights:
-  external: true
-  hf_repo: Systran/faster-whisper-tiny
-  hf_revision: d90ca5fe260221311c53c58e660288d3deb8d356
-  allow_patterns:
-    - config.json
-    - model.bin
-    - tokenizer.json
-    - vocabulary.txt
-
 # --- Networking ----------------------------------------------------------
 port: 8000
 

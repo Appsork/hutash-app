@@ -73,18 +73,6 @@ source:
   manifest: models/kokoro/manifest.json
   shell: hutash_inference/
 
-# --- Weights (weights-out) -----------------------------------------------
-# Copied verbatim from catalogue.json. Downloaded at install time into the
-# host weights cache, mounted at /weights, read offline (HF_HUB_OFFLINE=1).
-weights:
-  external: true
-  hf_repo: hexgrad/Kokoro-82M
-  hf_revision: f3ff3571791e39611d31c381e3a41a3af07b4987
-  allow_patterns:
-    - config.json
-    - kokoro-v1_0.pth
-    - voices/*.pt
-
 # --- Networking ----------------------------------------------------------
 # All containers listen on internal 8000; host port is assigned at install
 # time by docker_manager. Never hardcode the host port.

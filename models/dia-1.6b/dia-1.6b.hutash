@@ -70,22 +70,6 @@ source:
   manifest: models/dia-1.6b/manifest.json
   shell: hutash_inference/
 
-# --- Weights (weights-out) -----------------------------------------------
-weights:
-  external: true
-  hf_repo: nari-labs/Dia-1.6B-0626
-  hf_revision: ef2795fcc29c5abe6ffc91fd33808588b49bbc66
-  allow_patterns:
-    - config.json
-    - generation_config.json
-    - model-00001-of-00002.safetensors
-    - model-00002-of-00002.safetensors
-    - model.safetensors.index.json
-    - preprocessor_config.json
-    - tokenizer_config.json
-    - special_tokens_map.json
-    - audio_tokenizer_config.json
-
 # --- Networking ----------------------------------------------------------
 port: 8000
 

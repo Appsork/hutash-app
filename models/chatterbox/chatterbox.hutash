@@ -89,19 +89,6 @@ source:
   manifest: models/chatterbox/manifest.json
   shell: hutash_inference/
 
-# --- Weights (weights-out) -----------------------------------------------
-# Copied verbatim from catalogue.json.
-weights:
-  external: true
-  hf_repo: ResembleAI/chatterbox
-  hf_revision: ef85ce7bef2f3f1a74d0d837d379d2fcb68203cd
-  allow_patterns:
-    - ve.safetensors
-    - t3_cfg.safetensors
-    - s3gen.safetensors
-    - tokenizer.json
-    - conds.pt
-
 # --- Networking ----------------------------------------------------------
 port: 8000
 
