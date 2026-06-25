@@ -17,7 +17,7 @@ hutash_version: "1.0"
 
 id: chatterbox
 display_name: Chatterbox
-version: 1.0.1
+version: 1.0.2
 runtime: container
 category: model
 compute: any
@@ -62,9 +62,11 @@ packages:
     index_url: https://download.pytorch.org/whl/cpu
     variant: cpu
   # --- Model-specific (identical GPU/CPU pins) ---
-  # chatterbox-tts is installed --no-deps in the Dockerfile so its torch<=2.6
-  # pin can't override the base torch; its real deps are the explicit pins below.
+  # chatterbox-tts hard-pins torch<=2.6 and numpy<2.0.0; install it with
+  # no_deps so those caps can't override the base torch 2.11 / numpy>=2.0.0.
+  # Real deps are the explicit pins below (mirrors the Dockerfile's --no-deps).
   - name: chatterbox-tts==0.1.7
+    no_deps: true
   - name: "numpy>=2.0.0"
   - name: librosa==0.11.0
   - name: s3tokenizer
