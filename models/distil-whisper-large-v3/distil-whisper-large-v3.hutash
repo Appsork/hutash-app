@@ -8,9 +8,9 @@
 #   - models/distil-whisper-large-v3/Dockerfile.cpu  (CPU; FROM appsork/hutash-inference-cpu:1.1)
 # faster-whisper / CTranslate2 backend — NO torch in either variant. Both
 # variants build on python:3.11-slim (the engine no longer selects a CUDA base
-# image). CT2 GPU needs cuDNN, which the cudnn-runtime base used to provide; it
-# is now installed from pip as a variant: gpu package (nvidia-cudnn-cu12). The
-# CPU variant omits it.
+# image). CT2 GPU needs the full CUDA runtime, which the nvidia/cuda base used to
+# provide; it is now installed from pip as variant: gpu packages (cublas, cudnn,
+# cufft, curand, cusolver, cusparse, cuda-runtime). The CPU variant omits them.
 
 hutash_version: "1.0"
 
@@ -45,9 +45,23 @@ packages:
   - name: uvicorn==0.47.0
   - name: fastapi==0.136.1
   - name: python-multipart==0.0.29
-  # CT2 GPU acceleration needs cuDNN; with no CUDA base image it comes from pip.
+  # CT2 GPU acceleration needs the full CUDA runtime. The old nvidia/cuda base
+  # image provided these libs; with no CUDA base image they all come from pip.
   # GPU variant only — the CPU variant runs CT2 on the slim Python base.
+  # torch is NOT used here, so nothing else supplies CUDA — every lib is explicit.
+  - name: nvidia-cublas-cu12
+    variant: gpu
   - name: nvidia-cudnn-cu12
+    variant: gpu
+  - name: nvidia-cufft-cu12
+    variant: gpu
+  - name: nvidia-curand-cu12
+    variant: gpu
+  - name: nvidia-cusolver-cu12
+    variant: gpu
+  - name: nvidia-cusparse-cu12
+    variant: gpu
+  - name: nvidia-cuda-runtime-cu12
     variant: gpu
 
 # --- Application source ---------------------------------------------------
