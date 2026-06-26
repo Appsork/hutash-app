@@ -61,6 +61,7 @@ health:
   interval: 10s
   timeout: 5s
   retries: 3
+  start_period: 30s                  # HEALTHCHECK --start-period (model warm-up grace)
 
 # --- Entrypoint ----------------------------------------------------------
 entrypoint:

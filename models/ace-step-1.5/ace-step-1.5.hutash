@@ -61,6 +61,14 @@ packages:
   - name: uvicorn==0.44.0
   - name: fastapi==0.136.0
   - name: soundfile==0.13.1
+  # ACE-Step's install pulls a CPU torchvision off PyPI, overwriting the cu128
+  # wheel and breaking `torchvision::nms`. Mirror the Dockerfile's final
+  # `--force-reinstall --no-deps` step: re-pin the cu128 wheel as an isolated
+  # install emitted last, so it wins over whatever ACE-Step dragged in.
+  - name: torchvision==0.26.0+cu128
+    index_url: https://download.pytorch.org/whl/cu128
+    no_deps: true
+    force_reinstall: true
 
 # --- Application source ---------------------------------------------------
 source:
@@ -78,6 +86,7 @@ health:
   interval: 10s
   timeout: 5s
   retries: 3
+  start_period: 30s                  # HEALTHCHECK --start-period (model warm-up grace)
 
 # --- Entrypoint ----------------------------------------------------------
 entrypoint:

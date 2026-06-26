@@ -10,13 +10,15 @@
 #   - docker/base/cpu                            (torch 2.11.0+cpu)
 # Model-specific pins are IDENTICAL across GPU/CPU; only the torch stack differs.
 #
-# CAVEAT — baked secondary dependency NOT captured here: the Dockerfile bakes the
-# google/flan-t5-large TOKENIZER (revision 0613663d0d48ea86ba8cb3d7a44f0f65dc596a2a,
+# Baked secondary dependency: the Dockerfile bakes the google/flan-t5-large
+# TOKENIZER (revision 0613663d0d48ea86ba8cb3d7a44f0f65dc596a2a,
 # allow_patterns config.json/tokenizer_config.json/tokenizer.json/spiece.model/
 # special_tokens_map.json) into /app/flan-t5-tokenizer. Parler's
 # description_tokenizer loads it offline; without it the container fails under
-# HF_HUB_OFFLINE=1. The single `weights` block below cannot express a second repo
-# — this must be staged separately before this model runs offline.
+# HF_HUB_OFFLINE=1. This is reproduced via `source.assets` below (the tokenizer
+# files ship alongside this spec in the hutash-app repo and are COPYd into the
+# image), mirroring `COPY models/parler-tts-mini-1.1/flan-t5-tokenizer
+# /app/flan-t5-tokenizer`.
 
 hutash_version: "1.0"
 
@@ -36,6 +38,7 @@ environment:
     HF_HUB_CACHE: /weights
     HF_HUB_OFFLINE: "1"
     PORT: "8000"
+    UV_HTTP_TIMEOUT: "300"             # Dockerfile ENV UV_HTTP_TIMEOUT=300 (slow parler build)
 
 # --- System packages (apt-get) -------------------------------------------
 system_packages:
@@ -77,6 +80,12 @@ source:
   inference: models/parler-tts-mini-1.1/inference.py
   manifest: models/parler-tts-mini-1.1/manifest.json
   shell: hutash_inference/
+  # Baked google/flan-t5-large tokenizer → /app/flan-t5-tokenizer. Mirrors
+  # `COPY models/parler-tts-mini-1.1/flan-t5-tokenizer /app/flan-t5-tokenizer`.
+  assets:
+    - src: models/parler-tts-mini-1.1/flan-t5-tokenizer
+      dest: /app/flan-t5-tokenizer
+      dir: true
 
 # --- Networking ----------------------------------------------------------
 port: 8000
@@ -87,6 +96,7 @@ health:
   interval: 10s
   timeout: 5s
   retries: 3
+  start_period: 30s                  # HEALTHCHECK --start-period (model warm-up grace)
 
 # --- Entrypoint ----------------------------------------------------------
 entrypoint:
