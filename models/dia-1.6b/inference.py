@@ -54,13 +54,17 @@ class Dia16BInference(Inference):
         # SEPARATE HF repo. AutoProcessor.from_pretrained ALWAYS rebuilds the
         # audio_tokenizer from audio_tokenizer_config (fetching that repo, and
         # ignoring any injected instance), which fails under HF_HUB_OFFLINE=1.
-        # The codec is baked into the image at /app/dac (see Dockerfile; North
-        # Star §3 — small + fixed → image). Build the DiaProcessor explicitly
-        # from the local sub-components + the baked DAC so nothing hits the
-        # network. (NEEDS GPU RUNTIME TEST.)
+        # The codec's 300 MB safetensors is too large to bake into the image or
+        # commit to the catalogue, so it is staged into the mounted weights cache
+        # as a companion repo (weights_downloader `extra_hf_repos`) and resolves
+        # offline BY REPO ID under HF_HUB_CACHE=/weights. A legacy baked /app/dac
+        # is still honoured when present. Build the DiaProcessor explicitly from
+        # the local sub-components + the local DAC so nothing hits the network.
+        import os as _os
+        dac_src = "/app/dac" if _os.path.isdir("/app/dac") else "descript/dac_44khz"
         feature_extractor = AutoFeatureExtractor.from_pretrained(weights_dir)
         text_tokenizer = AutoTokenizer.from_pretrained(weights_dir)
-        dac = DacModel.from_pretrained("/app/dac", local_files_only=True)
+        dac = DacModel.from_pretrained(dac_src, local_files_only=True)
         self.processor = DiaProcessor(
             feature_extractor, text_tokenizer, audio_tokenizer=dac
         )
