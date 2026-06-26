@@ -46,16 +46,14 @@ class ParlerTTSMiniInference(Inference):
         )
 
         weights_dir = resolve_local_weights_dir(self.model_id)
-        # Load in float16 on GPU. The checkpoint's native dtype is float32
-        # (config torch_dtype=float32), which makes Parler-TTS Mini occupy
-        # ~10 GB of VRAM — it then OOMs at load peak on a 12 GB card (e.g. an
-        # RTX 3060), crash-looping the container during install. float16 halves
-        # that to ~5 GB with no audible quality loss for TTS. CPU keeps float32
-        # (half precision is unsupported / slow on CPU).
-        dtype = torch.float16 if self.device == "cuda" else torch.float32
+        # Load at the checkpoint's native precision (float32). Under the
+        # on-demand model lifecycle (Ollama-style), only one GPU model is
+        # resident at a time — Studio stops other GPU containers before starting
+        # this one — so Parler-TTS Mini's ~10 GB load peak fits a 12 GB card
+        # without the float16 cast. Keeping fp32 avoids any half-precision
+        # quality/compat caveats.
         self.model = ParlerTTSForConditionalGeneration.from_pretrained(
             weights_dir,
-            torch_dtype=dtype,
         ).to(self.device)
         # Prompt tokenizer = the text to be spoken.
         self.tokenizer = AutoTokenizer.from_pretrained(weights_dir)
