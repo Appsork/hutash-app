@@ -30,6 +30,14 @@ environment:
     HF_HUB_CACHE: /weights
     HF_HUB_OFFLINE: "1"
     PORT: "8000"
+    # CTranslate2 (faster-whisper's backend) dlopens the CUDA libs at COMPUTE
+    # time. With no torch to wire up the loader path, the nvidia-*-cu12 pip
+    # wheels land in site-packages/nvidia/*/lib which the dynamic linker does
+    # not search by default — so the model LOADS but the first transcribe()
+    # throws "Library libcublas.so.12 is not found". Put those dirs on
+    # LD_LIBRARY_PATH so the entrypoint resolves them. GPU-only paths; on the
+    # CPU variant these dirs do not exist and the loader silently ignores them.
+    LD_LIBRARY_PATH: /usr/local/lib/python3.11/site-packages/nvidia/cublas/lib:/usr/local/lib/python3.11/site-packages/nvidia/cudnn/lib:/usr/local/lib/python3.11/site-packages/nvidia/cufft/lib:/usr/local/lib/python3.11/site-packages/nvidia/curand/lib:/usr/local/lib/python3.11/site-packages/nvidia/cusolver/lib:/usr/local/lib/python3.11/site-packages/nvidia/cusparse/lib:/usr/local/lib/python3.11/site-packages/nvidia/cuda_runtime/lib:/usr/local/lib/python3.11/site-packages/nvidia/cuda_nvrtc/lib:/usr/local/lib/python3.11/site-packages/nvidia/nvjitlink/lib
 
 # --- System packages (apt-get) -------------------------------------------
 system_packages:
