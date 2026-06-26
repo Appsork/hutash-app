@@ -129,6 +129,13 @@
         "special_tokens_map.json",
         "audio_tokenizer_config.json"
       ],
+      "extra_hf_repos": [
+        {
+          "repo": "descript/dac_44khz",
+          "revision": "c1bc521685adf9cfe247bc39a5ca58917eda1ac4",
+          "allow_patterns": ["config.json", "model.safetensors", "preprocessor_config.json"]
+        }
+      ],
       "quality_score": 0.91,
       "requires_aura": "0.1.0"
     },
