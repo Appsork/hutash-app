@@ -21,6 +21,34 @@ from hutash_inference.errors import GenerationError
 
 _MODEL_ID = "nari-labs/Dia-1.6B-0626"
 _SAMPLE_RATE = 44100  # Dia / Descript Audio Codec native rate (44.1 kHz mono)
+_DAC_REPO = "descript/dac_44khz"
+
+
+def _resolve_dac_dir() -> str:
+    """Return a local directory holding the DAC codec, resolved fully offline.
+
+    Resolution order:
+      1. A legacy baked ``/app/dac`` directory, if the image carries one.
+      2. The companion repo staged into the HF cache by the weights downloader
+         (``extra_hf_repos``) — found by globbing
+         ``$HF_HUB_CACHE/models--descript--dac_44khz/snapshots/<commit>/``.
+         Loading the snapshot DIR (not the repo id) avoids the missing
+         ``refs/main`` pointer that a commit-pinned download leaves out, which
+         would otherwise make a by-id load reach the network and fail offline.
+      3. Fall back to the bare repo id (online path / dev box).
+    """
+    import glob
+    import os
+
+    if os.path.isdir("/app/dac"):
+        return "/app/dac"
+    cache = os.environ.get("HF_HUB_CACHE") or "/weights"
+    repo_cache = os.path.join(cache, "models--descript--dac_44khz", "snapshots")
+    snaps = sorted(glob.glob(os.path.join(repo_cache, "*")))
+    snaps = [s for s in snaps if os.path.isdir(s)]
+    if snaps:
+        return snaps[0]
+    return _DAC_REPO
 
 
 class Dia16BInference(Inference):
@@ -56,12 +84,14 @@ class Dia16BInference(Inference):
         # ignoring any injected instance), which fails under HF_HUB_OFFLINE=1.
         # The codec's 300 MB safetensors is too large to bake into the image or
         # commit to the catalogue, so it is staged into the mounted weights cache
-        # as a companion repo (weights_downloader `extra_hf_repos`) and resolves
-        # offline BY REPO ID under HF_HUB_CACHE=/weights. A legacy baked /app/dac
-        # is still honoured when present. Build the DiaProcessor explicitly from
-        # the local sub-components + the local DAC so nothing hits the network.
-        import os as _os
-        dac_src = "/app/dac" if _os.path.isdir("/app/dac") else "descript/dac_44khz"
+        # as a companion repo (weights_downloader `extra_hf_repos`). It is fetched
+        # pinned to a commit, so the HF cache has a snapshots/<commit>/ dir but no
+        # refs/main pointer — meaning a load BY REPO ID would still try the network
+        # to resolve "main" and fail offline. So resolve the snapshot DIRECTORY
+        # directly from the cache and load from that path. A legacy baked /app/dac
+        # is honoured first. Build the DiaProcessor explicitly from the local
+        # sub-components + the local DAC so nothing hits the network.
+        dac_src = _resolve_dac_dir()
         feature_extractor = AutoFeatureExtractor.from_pretrained(weights_dir)
         text_tokenizer = AutoTokenizer.from_pretrained(weights_dir)
         dac = DacModel.from_pretrained(dac_src, local_files_only=True)
