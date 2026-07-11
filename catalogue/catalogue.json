@@ -60,6 +60,7 @@
   "models": [
     {
       "id": "kokoro",
+      "weight_category": "audio",
       "display_name": "Kokoro",
       "description": "Natural-sounding text-to-speech with multiple voice presets and speaking styles.",
       "modality": "tts",
@@ -81,6 +82,7 @@
     },
     {
       "id": "parler-tts-mini-1.1",
+      "weight_category": "audio",
       "display_name": "Parler-TTS Mini",
       "description": "Describe a voice in plain English — gender, tone, pace, recording quality.",
       "modality": "tts",
@@ -107,6 +109,7 @@
     },
     {
       "id": "dia-1.6b",
+      "weight_category": "audio",
       "display_name": "Dia 1.6B",
       "description": "Multi-speaker dialogue TTS with in-context voice cloning and nonverbal cues.",
       "modality": "clone",
@@ -141,6 +144,7 @@
     },
     {
       "id": "ace-step-1.5",
+      "weight_category": "audio",
       "display_name": "ACE-Step 1.5",
       "description": "Music generation from text prompts. Stems, lyrics, and tempo control.",
       "modality": "music",
@@ -157,6 +161,7 @@
     },
     {
       "id": "whisper-large-v3",
+      "weight_category": "audio",
       "display_name": "Whisper Large v3",
       "description": "High-accuracy multilingual transcription with optional word-level timestamps.",
       "modality": "stt",
@@ -180,6 +185,7 @@
     },
     {
       "id": "distil-whisper-large-v3",
+      "weight_category": "audio",
       "display_name": "Distil-Whisper Large v3",
       "description": "Faster distilled Whisper. Near-v3 accuracy at a fraction of the size.",
       "modality": "stt",
@@ -203,6 +209,7 @@
     },
     {
       "id": "chatterbox",
+      "weight_category": "audio",
       "display_name": "Chatterbox",
       "description": "Voice cloning from a 5–30 second reference audio clip.",
       "modality": "clone",
@@ -226,6 +233,7 @@
     },
     {
       "id": "prompt-engine",
+      "weight_category": "LLM",
       "display_name": "Prompt Improver",
       "modality": "llm",
       "version": "1.0.1",
@@ -245,6 +253,7 @@
     },
     {
       "id": "whisper-tiny",
+      "weight_category": "audio",
       "display_name": "Whisper Tiny",
       "description": "Lightweight transcription model. Fast and efficient for basic use cases.",
       "modality": "stt",
