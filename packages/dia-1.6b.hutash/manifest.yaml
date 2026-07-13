@@ -13,5 +13,6 @@ capabilities:
 platforms:
 - windows
 - linux
+min_vram_gb: 6.0
 description: Multi-speaker dialogue TTS with in-context voice cloning and nonverbal
   cues.

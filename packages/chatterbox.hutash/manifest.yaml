@@ -15,4 +15,5 @@ capabilities:
 platforms:
 - windows
 - linux
+min_vram_gb: 4.0
 description: Voice cloning from a 5–30 second reference audio clip.

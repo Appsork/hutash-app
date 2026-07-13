@@ -13,4 +13,5 @@ capabilities:
 platforms:
 - windows
 - linux
+min_vram_gb: 4.0
 description: Describe a voice in plain English — gender, tone, pace, recording quality.
