@@ -2,7 +2,7 @@
 # variant by GPU detection at install; the package declares both.
 python: '3.11'
 common:
-- hutash-inference
+- hutash-inference==0.1.0
 - parler-tts==0.2.3
 - transformers==4.46.1
 - soundfile==0.13.1
