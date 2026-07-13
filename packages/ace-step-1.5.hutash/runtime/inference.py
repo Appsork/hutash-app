@@ -45,6 +45,36 @@ from hutash_inference import (  # noqa: E402
 from hutash_inference.errors import GenerationError  # noqa: E402
 
 
+def _resolve_device(default: str = "cuda") -> str:
+    """Resolve HUTASH_DEVICE (cuda | auto | cpu | mps) to a concrete device.
+
+    The engine injects HUTASH_DEVICE from its detected compute mode. "auto"
+    picks the best available accelerator; an explicit "cuda"/"mps" that is not
+    actually present falls back to "cpu", so a GPU model still runs (slowly) on
+    a CPU-only host instead of crashing.
+    """
+    import torch
+
+    want = os.environ.get("HUTASH_DEVICE", default)
+    has_mps = bool(
+        getattr(torch.backends, "mps", None) and torch.backends.mps.is_available()
+    )
+    if want == "auto":
+        return "cuda" if torch.cuda.is_available() else ("mps" if has_mps else "cpu")
+    if want == "cuda" and not torch.cuda.is_available():
+        return "cpu"
+    if want == "mps" and not has_mps:
+        return "cpu"
+    return want
+
+
+def _cpu_offload() -> bool:
+    """True when the engine asks accelerate to offload weights to CPU RAM
+    (HUTASH_CPU_OFFLOAD=1), used with device_map="auto" model loads."""
+    return os.environ.get("HUTASH_CPU_OFFLOAD", "0") == "1"
+
+
+
 class ACEStepInference(Inference):
     """ACE-Step music generator â€” text prompt + optional lyrics."""
 
@@ -62,9 +92,11 @@ class ACEStepInference(Inference):
         checkpoint = os.environ.get("ACE_STEP_CHECKPOINT") or resolve_local_weights_dir(
             self.model_id
         )
+        # HUTASH_DEVICE (cuda|auto|cpu|mps) → ACE-Step device_id (GPU 0 / CPU -1).
+        device = _resolve_device()
         self.pipeline = ACEStepPipeline(
             checkpoint_dir=checkpoint,
-            device_id=0 if torch.cuda.is_available() else -1,
+            device_id=0 if device == "cuda" else -1,
         )
 
     @capability("music")

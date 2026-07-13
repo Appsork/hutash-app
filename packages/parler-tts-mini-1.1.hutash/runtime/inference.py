@@ -27,6 +27,36 @@ _DEFAULT_VOICE = (
 )
 
 
+def _resolve_device(default: str = "cuda") -> str:
+    """Resolve HUTASH_DEVICE (cuda | auto | cpu | mps) to a concrete device.
+
+    The engine injects HUTASH_DEVICE from its detected compute mode. "auto"
+    picks the best available accelerator; an explicit "cuda"/"mps" that is not
+    actually present falls back to "cpu", so a GPU model still runs (slowly) on
+    a CPU-only host instead of crashing.
+    """
+    import torch
+
+    want = os.environ.get("HUTASH_DEVICE", default)
+    has_mps = bool(
+        getattr(torch.backends, "mps", None) and torch.backends.mps.is_available()
+    )
+    if want == "auto":
+        return "cuda" if torch.cuda.is_available() else ("mps" if has_mps else "cpu")
+    if want == "cuda" and not torch.cuda.is_available():
+        return "cpu"
+    if want == "mps" and not has_mps:
+        return "cpu"
+    return want
+
+
+def _cpu_offload() -> bool:
+    """True when the engine asks accelerate to offload weights to CPU RAM
+    (HUTASH_CPU_OFFLOAD=1), used with device_map="auto" model loads."""
+    return os.environ.get("HUTASH_CPU_OFFLOAD", "0") == "1"
+
+
+
 class ParlerTTSMiniInference(Inference):
     """Parler-TTS Mini 1.1 text-to-speech."""
 
@@ -42,7 +72,7 @@ class ParlerTTSMiniInference(Inference):
         from parler_tts import ParlerTTSForConditionalGeneration
         from transformers import AutoTokenizer
 
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = _resolve_device()  # HUTASH_DEVICE (cuda|auto|cpu|mps)
         self.logger.info(
             "Loading Parler-TTS Mini 1.1 on %sâ€¦", self.device,
         )
@@ -54,9 +84,16 @@ class ParlerTTSMiniInference(Inference):
         # this one — so Parler-TTS Mini's ~10 GB load peak fits a 12 GB card
         # without the float16 cast. Keeping fp32 avoids any half-precision
         # quality/compat caveats.
-        self.model = ParlerTTSForConditionalGeneration.from_pretrained(
-            weights_dir,
-        ).to(self.device)
+        # HUTASH_CPU_OFFLOAD=1 → let accelerate spread/offload the model
+        # (device_map="auto"); otherwise load fully onto the resolved device.
+        if _cpu_offload():
+            self.model = ParlerTTSForConditionalGeneration.from_pretrained(
+                weights_dir, device_map="auto"
+            )
+        else:
+            self.model = ParlerTTSForConditionalGeneration.from_pretrained(
+                weights_dir,
+            ).to(self.device)
         # Prompt tokenizer = the text to be spoken.
         self.tokenizer = AutoTokenizer.from_pretrained(weights_dir)
         # Description tokenizer = the natural-language voice style. Parler v1.1

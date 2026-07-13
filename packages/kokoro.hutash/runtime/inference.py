@@ -14,6 +14,24 @@ from hutash_inference import Inference, capability, resolve_local_weights_dir
 from hutash_inference.errors import GenerationError
 
 
+def _resolve_device(default: str = "cuda") -> str:
+    """Resolve HUTASH_DEVICE (cuda | auto | cpu | mps) to a concrete device,
+    falling back to cpu when the requested accelerator is not present."""
+    import torch
+
+    want = os.environ.get("HUTASH_DEVICE", default)
+    has_mps = bool(
+        getattr(torch.backends, "mps", None) and torch.backends.mps.is_available()
+    )
+    if want == "auto":
+        return "cuda" if torch.cuda.is_available() else ("mps" if has_mps else "cpu")
+    if want == "cuda" and not torch.cuda.is_available():
+        return "cpu"
+    if want == "mps" and not has_mps:
+        return "cpu"
+    return want
+
+
 class KokoroInference(Inference):
     """Kokoro text-to-speech."""
 
@@ -35,7 +53,10 @@ class KokoroInference(Inference):
         config_path = os.path.join(weights_dir, "config.json")
         model_path = os.path.join(weights_dir, "kokoro-v1_0.pth")
         self.logger.info("Loading Kokoro from local weights: %s", weights_dir)
-        kmodel = KModel(repo_id=None, config=config_path, model=model_path).eval()
+        # Kokoro is a CPU model by default; HUTASH_DEVICE can still move it
+        # onto an accelerator (cuda|mps) when the engine selects one.
+        device = _resolve_device(default="cpu")
+        kmodel = KModel(repo_id=None, config=config_path, model=model_path).to(device).eval()
         self.pipeline = KPipeline(lang_code="a", repo_id=None, model=kmodel)  # 'a' = American English
         self.logger.info("Kokoro pipeline loaded (offline)")
 

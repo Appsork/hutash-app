@@ -10,7 +10,22 @@ transcript string under the `transcript` key (no segments, no word
 timestamps â€” those belong to the user-facing whisper-large-v3 model).
 """
 
+import os
+
 from hutash_inference import Inference, capability, resolve_local_weights_dir
+
+
+def _ct2_device_compute(default: str = "auto") -> tuple:
+    """Map HUTASH_DEVICE (cuda|auto|cpu|mps) to faster-whisper's CTranslate2
+    (device, compute_type). CTranslate2 has no MPS backend, so mps -> cpu/int8;
+    "auto" lets CTranslate2 pick cuda/float16 or cpu/int8 from the libs present."""
+    want = os.environ.get("HUTASH_DEVICE", default)
+    return {
+        "cuda": ("cuda", "float16"),
+        "cpu": ("cpu", "int8"),
+        "auto": ("auto", "auto"),
+        "mps": ("cpu", "int8"),
+    }.get(want, ("auto", "auto"))
 
 
 class WhisperTinyInference(Inference):
@@ -28,10 +43,13 @@ class WhisperTinyInference(Inference):
         # returns /weights/models--*/snapshots/<hf_revision>/, whose root holds
         # the CT2 files faster-whisper expects (model.bin, config.json,
         # tokenizer.json, vocabulary.txt).
+        # Internal CPU component: HUTASH_DEVICE defaults to cpu/int8, but the
+        # engine can still select cuda/float16 via HUTASH_DEVICE if desired.
+        device, compute_type = _ct2_device_compute(default="cpu")
         self.model = WhisperModel(
             resolve_local_weights_dir(self.model_id),
-            device="cpu",
-            compute_type="int8",
+            device=device,
+            compute_type=compute_type,
         )
 
     @capability("stt")

@@ -10,7 +10,22 @@ present or not. faster-whisper's CTranslate2 backend with device="auto"
 the GPU image, CPU in the slim image.
 """
 
+import os
+
 from hutash_inference import Inference, capability, resolve_local_weights_dir
+
+
+def _ct2_device_compute(default: str = "auto") -> tuple:
+    """Map HUTASH_DEVICE (cuda|auto|cpu|mps) to faster-whisper's CTranslate2
+    (device, compute_type). CTranslate2 has no MPS backend, so mps -> cpu/int8;
+    "auto" lets CTranslate2 pick cuda/float16 or cpu/int8 from the libs present."""
+    want = os.environ.get("HUTASH_DEVICE", default)
+    return {
+        "cuda": ("cuda", "float16"),
+        "cpu": ("cpu", "int8"),
+        "auto": ("auto", "auto"),
+        "mps": ("cpu", "int8"),
+    }.get(want, ("auto", "auto"))
 
 
 class WhisperInference(Inference):
@@ -27,10 +42,12 @@ class WhisperInference(Inference):
         # device="auto" + compute_type="auto" resolve correctly in both the
         # GPU image (CUDA libs present â†’ cuda/float16) and the CPU image
         # (no CUDA â†’ cpu/int8). No torch, no manual detection.
+        # HUTASH_DEVICE selects the CTranslate2 device + compute_type.
+        device, compute_type = _ct2_device_compute(default="auto")
         self.model = WhisperModel(
             resolve_local_weights_dir(self.model_id),
-            device="auto",
-            compute_type="auto",
+            device=device,
+            compute_type=compute_type,
         )
 
     @capability("stt")

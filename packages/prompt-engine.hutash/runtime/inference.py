@@ -28,10 +28,16 @@ class PromptEngineInference(Inference):
         if not model_files:
             raise RuntimeError(f"No GGUF model file found in {weights_dir}")
 
+        # HUTASH_DEVICE (cuda|auto|cpu|mps) -> llama.cpp GPU offload. Internal
+        # CPU component by default (cpu/auto -> 0 GPU layers); an explicit
+        # cuda/mps offloads all layers when the llama build supports it.
+        _device = os.environ.get("HUTASH_DEVICE", "cpu")
+        n_gpu_layers = -1 if _device in ("cuda", "mps") else 0
         self.model = Llama(
             model_path=model_files[0],
             n_ctx=2048,
             n_threads=4,
+            n_gpu_layers=n_gpu_layers,
             verbose=False,
         )
 

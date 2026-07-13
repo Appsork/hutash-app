@@ -12,6 +12,7 @@ locally without a GPU (slowly, unsupported).
 """
 
 import io
+import os
 
 import soundfile as sf
 import torch
@@ -51,6 +52,36 @@ def _resolve_dac_dir() -> str:
     return _DAC_REPO
 
 
+def _resolve_device(default: str = "cuda") -> str:
+    """Resolve HUTASH_DEVICE (cuda | auto | cpu | mps) to a concrete device.
+
+    The engine injects HUTASH_DEVICE from its detected compute mode. "auto"
+    picks the best available accelerator; an explicit "cuda"/"mps" that is not
+    actually present falls back to "cpu", so a GPU model still runs (slowly) on
+    a CPU-only host instead of crashing.
+    """
+    import torch
+
+    want = os.environ.get("HUTASH_DEVICE", default)
+    has_mps = bool(
+        getattr(torch.backends, "mps", None) and torch.backends.mps.is_available()
+    )
+    if want == "auto":
+        return "cuda" if torch.cuda.is_available() else ("mps" if has_mps else "cpu")
+    if want == "cuda" and not torch.cuda.is_available():
+        return "cpu"
+    if want == "mps" and not has_mps:
+        return "cpu"
+    return want
+
+
+def _cpu_offload() -> bool:
+    """True when the engine asks accelerate to offload weights to CPU RAM
+    (HUTASH_CPU_OFFLOAD=1), used with device_map="auto" model loads."""
+    return os.environ.get("HUTASH_CPU_OFFLOAD", "0") == "1"
+
+
+
 class Dia16BInference(Inference):
     """Dia 1.6B multi-speaker dialogue TTS."""
 
@@ -63,7 +94,7 @@ class Dia16BInference(Inference):
             DiaProcessor,
         )
 
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = _resolve_device()  # HUTASH_DEVICE (cuda|auto|cpu|mps)
         self.logger.info("Loading Dia 1.6B on %sâ€¦", self.device)
 
         # fp16 on GPU (~4.4 GB VRAM); fp32 on CPU fallback. Matches the
@@ -98,9 +129,16 @@ class Dia16BInference(Inference):
         self.processor = DiaProcessor(
             feature_extractor, text_tokenizer, audio_tokenizer=dac
         )
-        self.model = DiaForConditionalGeneration.from_pretrained(
-            weights_dir, torch_dtype=dtype
-        ).to(self.device)
+        # HUTASH_CPU_OFFLOAD=1 → device_map="auto" offloads across CPU/GPU;
+        # otherwise load fully onto the resolved device.
+        if _cpu_offload():
+            self.model = DiaForConditionalGeneration.from_pretrained(
+                weights_dir, torch_dtype=dtype, device_map="auto"
+            )
+        else:
+            self.model = DiaForConditionalGeneration.from_pretrained(
+                weights_dir, torch_dtype=dtype
+            ).to(self.device)
 
     @capability("voice-clone")
     def tts(
