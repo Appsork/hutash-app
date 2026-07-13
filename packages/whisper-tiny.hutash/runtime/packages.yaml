@@ -1,0 +1,12 @@
+# Python deps installed into the model venv (hutash-inference first).
+python: '3.11'
+packages:
+- hutash-inference
+- faster-whisper==1.2.1
+- uvicorn==0.47.0
+- fastapi==0.136.1
+- python-multipart==0.0.29
+system_packages:
+- build-essential
+- git
+- curl

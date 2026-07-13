@@ -1,0 +1,11 @@
+# Python deps installed into the model venv (hutash-inference first).
+python: '3.11'
+packages:
+- hutash-inference
+- llama-cpp-python==0.3.20
+- uvicorn==0.44.0
+- fastapi==0.136.0
+system_packages:
+- build-essential
+- git
+- curl

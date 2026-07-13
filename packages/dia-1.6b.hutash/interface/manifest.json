@@ -1,0 +1,152 @@
+{
+  "__generated_note__": "__AURA_GENERATED__ This file was generated from model.meta.yaml + Dockerfile LABELs by dev/scripts/generate-model-files.py. Do not edit directly \u00e2\u20ac\u201d edit model.meta.yaml or Dockerfile and regenerate.",
+  "model_id": "dia-1.6b",
+  "display_name": "Dia 1.6B",
+  "image": "docker.io/appsork/hutash-dia-1.6b:1.0",
+  "license": {
+    "spdx": "Apache-2.0",
+    "url": "https://github.com/nari-labs/dia/blob/main/LICENSE",
+    "commercial_ok": true,
+    "attribution_required": false,
+    "attribution_text": null
+  },
+  "capabilities": {
+    "voice-clone": {
+      "label": "Clone Voice",
+      "description": "Generate multi-speaker dialogue with emotion and nonverbal sounds",
+      "primary": true,
+      "endpoint": "/clone",
+      "status_message": "Generating dialogue\u2026",
+      "modality": "clone",
+      "inputs": {
+        "prompt": {
+          "type": "string",
+          "role": "prompt",
+          "label": "Dialogue script",
+          "description": "Multi-speaker script. Tag turns with [S1] / [S2] and add nonverbal cues like (laughs) or (sighs).",
+          "max_length": 1000,
+          "required": true,
+          "clear_after_generate": true
+        },
+        "voice_ref": {
+          "type": "audio_with_transcript",
+          "label": "Voice reference (Dia)",
+          "description": "Optional 5\u201310 s clip whose voice the output imitates (in-context voice cloning). The transcript field auto-fills on upload \u2014 edit it if the auto-transcription needs fixing. Leave empty for a random voice.",
+          "accept": [
+            "audio/*",
+            "wav",
+            "mp3",
+            "flac",
+            "ogg",
+            "m4a",
+            "webm"
+          ],
+          "transcript_max_length": 500,
+          "required": false
+        }
+      },
+      "controls": {
+        "seed": {
+          "type": "number",
+          "role": "seed",
+          "label": "Dia voice seed",
+          "description": "Random seed; -1 for a new voice each run",
+          "default": -1,
+          "null_label": "Random",
+          "advanced": true
+        },
+        "cfg_scale": {
+          "type": "slider",
+          "label": "Dia guidance scale",
+          "description": "How strongly generation follows the script",
+          "min": 1.0,
+          "max": 5.0,
+          "step": 0.1,
+          "default": 3.0,
+          "advanced": true
+        },
+        "temperature": {
+          "type": "slider",
+          "label": "Dia temperature",
+          "description": "Sampling temperature \u2014 higher is more varied",
+          "min": 0.5,
+          "max": 2.0,
+          "step": 0.05,
+          "default": 1.3,
+          "advanced": true
+        },
+        "max_tokens": {
+          "type": "slider",
+          "label": "Dia max new tokens",
+          "description": "Upper bound on generated audio length (~86 tokens \u2248 1 s)",
+          "min": 512,
+          "max": 4096,
+          "step": 128,
+          "unit": "tokens",
+          "default": 3072,
+          "advanced": true
+        }
+      },
+      "outputs": {
+        "audio": {
+          "type": "wav",
+          "role": "primary",
+          "sample_rate": 44100,
+          "channels": 1
+        }
+      }
+    }
+  },
+  "hardware": {
+    "min_vram_gb": 6,
+    "recommended_vram_gb": 8,
+    "supports_cpu": false,
+    "total_install_gb": 12
+  },
+  "labels": {
+    "hutash.model.name": "dia-1.6b",
+    "hutash.model.version": "1.6B-0626",
+    "hutash.model.hf_repo": "nari-labs/Dia-1.6B-0626",
+    "hutash.runtime.backend": "transformers",
+    "hutash.runtime.cuda": "12.6",
+    "hutash.build.date": "2026-05-23"
+  },
+  "tagline": "Dia 1.6B \u2014 ultra-realistic multi-speaker dialogue TTS (GPU)",
+  "description": "Dia is a 1.6B-parameter text-to-dialogue model from Nari Labs that\ngenerates ultra-realistic multi-speaker conversation in a single pass.\nMark turns with [S1] / [S2] speaker tags and sprinkle nonverbal cues\nlike (laughs) or (sighs); optionally supply a short reference clip to\nclone a voice. GPU-only.\n",
+  "creator": {
+    "name": "Nari Labs",
+    "url": "https://github.com/nari-labs"
+  },
+  "source": {
+    "upstream_repo": "https://github.com/nari-labs/dia",
+    "huggingface_repo": "nari-labs/Dia-1.6B-0626"
+  },
+  "notes": [
+    "GPU only. Upstream CPU inference is \"to be added soon\" (not yet supported), so no Dockerfile.cpu / CPU image ships. inference.py still detects the device via torch.cuda.is_available() for graceful local runs.",
+    "Two-speaker dialogue via [S1]/[S2] tags plus a fixed set of nonverbal cues ((laughs), (sighs), (coughs), \u2026). Voice is random per run unless seed is fixed or a reference clip is supplied.",
+    "voice_ref enables Dia's in-context voice cloning. The exact processor keyword for the audio prompt should be confirmed against the pinned transformers version at first build.",
+    "Weights (~6 GB) for nari-labs/Dia-1.6B-0626 are baked at build via snapshot_download (weights-first layer). The Descript Audio Codec (DAC) used for decoding is pulled when the model is verify-loaded.",
+    "torch / torchaudio / transformers ship UNPINNED in the Dockerfile as a starting point; pin exact versions from pip freeze after the first clean build (Container Build Rule). transformers must be a version that includes DiaForConditionalGeneration.",
+    "Output is 44.1 kHz mono (Dia/DAC native rate) \u2014 verify at first build."
+  ],
+  "improve": {
+    "default": "optimised",
+    "strategies": [
+      {
+        "id": "grammar",
+        "label": "Fix grammar",
+        "instruction": "Fix spelling and grammar mistakes only. Do not change the meaning, structure, or intent of the text. Return only the corrected text."
+      },
+      {
+        "id": "optimised",
+        "label": "Optimise for Dia",
+        "instruction": "Reformat the text into Dia dialogue script syntax. Your only job is to add, correct, and normalise speaker tags. Never add, remove, rewrite, paraphrase, shorten, or expand the words the user wants spoken \u2014 preserve them exactly, in their original order, with their original punctuation.\nTag rules: - Always begin the script with [S1]. - Alternate [S1] and [S2] for each new speaker turn. Dia requires\n  strict alternation \u2014 never emit the same tag twice in a row.\n- If two consecutive turns belong to the same speaker, merge\n  their spoken content under one tag (joining the words in order).\n- If the input starts with [S2] or otherwise breaks alternation,\n  re-label the tags so the script starts with [S1] and alternates\n  cleanly. Keep the spoken content in its original order.\n- If the input is one continuous passage with no speaker\n  indicators, treat it as a single-speaker monologue: wrap the\n  entire text in one [S1] tag, unchanged.\n\nFormatting vs. content: - Speaker attributions (\"Alice said:\", \"Narrator:\", \"Bob asked\")\n  are formatting \u2014 convert them into [S1]/[S2] tags, do not keep\n  the prose.\n- Stage directions, scene descriptions, and bracketed actions\n  are formatting \u2014 drop them.\n- Dia's recognised nonverbal cues are content if the user wrote\n  them \u2014 keep them in place: (laughs), (chuckle), (sighs),\n  (gasps), (coughs), (clears throat), (sniffs), (groans),\n  (whistles), (sings), (mumbles). Drop any cue not on this list\n  (Dia would speak it literally otherwise).\n- All other spoken words are content \u2014 preserve them verbatim.\nDo not invent new cues, character descriptions, voice notes, emotion labels, or extra dialogue. Return only the reformatted script \u2014 no preamble, explanation, or trailing commentary."
+      }
+    ]
+  },
+  "api": {
+    "health": "/health",
+    "gpu": true
+  },
+  "layout": "aggregator-3panel"
+}

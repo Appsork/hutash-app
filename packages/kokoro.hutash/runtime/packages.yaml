@@ -1,0 +1,19 @@
+# Python deps installed into the model venv (hutash-inference first).
+python: '3.11'
+packages:
+- hutash-inference
+- name: torch==2.11.0
+  index_url: https://download.pytorch.org/whl/cpu
+- name: torchaudio==2.11.0
+  index_url: https://download.pytorch.org/whl/cpu
+- kokoro==0.9.4
+- soundfile
+- uvicorn
+- fastapi
+- name: en_core_web_sm==3.8.0
+  url: https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+system_packages:
+- build-essential
+- git
+- curl
+- espeak-ng

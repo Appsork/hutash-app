@@ -1,0 +1,16 @@
+# Identity card — engine reads this first. runtime: venv
+hutash_format: '1.0'
+id: ace-step-1.5
+name: ACE-Step 1.5
+version: 1.0.1
+type: model
+runtime: venv
+gpu: required
+license: Apache-2.0
+capabilities:
+- id: music
+  modality: music
+platforms:
+- windows
+- linux
+description: Music generation from text prompts. Stems, lyrics, and tempo control.

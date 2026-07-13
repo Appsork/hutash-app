@@ -1,0 +1,5 @@
+# HF weights to fetch. revision 'main' is resolved to a commit hash at download.
+sources:
+- repo: distil-whisper/distil-large-v3
+  revision: main
+download_size_gb: 8.7

@@ -1,0 +1,18 @@
+# Proven launch: the shared hutash_inference server via uvicorn --factory.
+command: uvicorn
+args:
+- --factory
+- hutash_inference.server:create_app
+- --host
+- 127.0.0.1
+- --port
+- '{port}'
+env:
+  HUTASH_MODEL_ID: dia-1.6b
+  HUTASH_MODEL_DIR: '{model_dir}'
+  HF_HUB_CACHE: '{weights_dir}'
+  HF_HUB_OFFLINE: '1'
+  HUTASH_HF_REVISION: main
+port: 8000
+health_endpoint: /health
+health_timeout: 120

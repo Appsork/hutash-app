@@ -1,0 +1,35 @@
+# Python deps installed into the model venv (hutash-inference first).
+python: '3.11'
+packages:
+- hutash-inference
+- name: torch==2.11.0+cu128
+  index_url: https://download.pytorch.org/whl/cu128
+- name: torchaudio==2.11.0+cu128
+  index_url: https://download.pytorch.org/whl/cu128
+- xformers
+- triton
+- name: torch==2.11.0+cpu
+  index_url: https://download.pytorch.org/whl/cpu
+- name: torchaudio==2.11.0+cpu
+  index_url: https://download.pytorch.org/whl/cpu
+- chatterbox-tts==0.1.7
+- numpy>=2.0.0
+- librosa==0.11.0
+- s3tokenizer
+- transformers==5.2.0
+- diffusers==0.29.0
+- resemble-perth>=1.0.0
+- conformer==0.3.2
+- safetensors==0.5.3
+- spacy-pkuseg
+- pykakasi==2.3.0
+- pyloudnorm
+- omegaconf
+- uvicorn==0.44.0
+- fastapi==0.136.0
+- python-multipart==0.0.26
+- soundfile==0.13.1
+system_packages:
+- build-essential
+- git
+- curl

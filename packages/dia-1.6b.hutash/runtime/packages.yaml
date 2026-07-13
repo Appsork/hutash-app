@@ -1,0 +1,21 @@
+# Python deps installed into the model venv (hutash-inference first).
+python: '3.11'
+packages:
+- hutash-inference
+- name: torch==2.12.0+cu126
+  index_url: https://download.pytorch.org/whl/cu126
+- name: torchaudio==2.11.0+cu126
+  index_url: https://download.pytorch.org/whl/cu126
+- transformers==5.9.0
+- soundfile==0.13.1
+- scipy==1.14.1
+- numpy==2.2.6
+- uvicorn==0.47.0
+- fastapi==0.136.1
+- python-multipart==0.0.29
+system_packages:
+- build-essential
+- git
+- ffmpeg
+- libsndfile1
+- curl

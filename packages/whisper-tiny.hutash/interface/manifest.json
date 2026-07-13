@@ -1,0 +1,85 @@
+{
+  "__generated_note__": "__AURA_GENERATED__ This file was generated from model.meta.yaml + Dockerfile LABELs by dev/scripts/generate-model-files.py. Do not edit directly \u2014 edit model.meta.yaml or Dockerfile and regenerate.",
+  "model_id": "whisper-tiny",
+  "display_name": "Whisper Tiny",
+  "image": "docker.io/appsork/hutash-whisper-tiny:1.0",
+  "license": {
+    "spdx": "MIT",
+    "url": "https://github.com/openai/whisper/blob/main/LICENSE",
+    "commercial_ok": true,
+    "attribution_required": false,
+    "attribution_text": null
+  },
+  "capabilities": {
+    "stt": {
+      "label": "Transcribe",
+      "description": "Internal speech-to-text for auto-fill features",
+      "primary": true,
+      "endpoint": "/stt",
+      "status_message": "Transcribing\u2026",
+      "inputs": {
+        "file": {
+          "type": "audio_file",
+          "label": "Audio file",
+          "accept": [
+            "audio/*",
+            "wav",
+            "mp3",
+            "m4a",
+            "ogg",
+            "flac",
+            "webm"
+          ],
+          "required": true
+        },
+        "language": {
+          "type": "string",
+          "label": "Language hint",
+          "description": "ISO-639-1 code, or \"auto\" for auto-detect",
+          "required": false
+        }
+      },
+      "outputs": {
+        "transcript": {
+          "type": "text"
+        }
+      }
+    }
+  },
+  "hardware": {
+    "min_vram_gb": 0,
+    "recommended_vram_gb": 0,
+    "supports_cpu": true,
+    "total_install_gb": 1
+  },
+  "labels": {
+    "hutash.model.name": "whisper-tiny",
+    "hutash.model.version": "tiny",
+    "hutash.model.hf_repo": "Systran/faster-whisper-tiny",
+    "hutash.runtime.backend": "faster-whisper",
+    "hutash.runtime.cuda": "none",
+    "hutash.build.date": "2026-05-28"
+  },
+  "tagline": "Whisper Tiny \u2014 invisible STT infrastructure for auto-fill",
+  "description": "Small CT2-quantised speech-to-text model (OpenAI Whisper Tiny via\nSystran's faster-whisper build). Aura uses it behind the scenes to\nauto-transcribe reference audio for voice-clone models: any model\nwhose manifest declares `auto_fill: {via: stt}` on an input gets\nfree transcription. Invisible system component \u2014 no UI controls,\nno model browser entry, no marketplace surface.\n",
+  "creator": {
+    "name": "OpenAI",
+    "url": "https://openai.com"
+  },
+  "source": {
+    "upstream_repo": "https://github.com/SYSTRAN/faster-whisper",
+    "huggingface_repo": "Systran/faster-whisper-tiny"
+  },
+  "notes": [
+    "Invisible infrastructure \u2014 NOT shown in the model browser, hidden via the `internal: true` flag in catalogue.json. Auto-installed at first launch as a system component (same path as prompt-engine).",
+    "Used by api/services/transcription/transcriber.py when any user-facing model declares `auto_fill: {via: stt}` on an input. First consumer is dia-1.6b voice_ref_transcript auto-filling from the uploaded voice_ref clip.",
+    "faster-whisper (CTranslate2 backend, MIT) \u2014 no torch needed. CPU + INT8 keeps the image small and inference fast for short clips.",
+    "Weights baked at build time via WhisperModel('Systran/faster-whisper-tiny', device='cpu', compute_type='int8') \u2014 the CT2 files are device-agnostic."
+  ],
+  "improve": null,
+  "api": {
+    "health": "/health",
+    "gpu": false
+  },
+  "layout": "aggregator-3panel"
+}

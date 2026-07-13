@@ -1,0 +1,5 @@
+# HF weights to fetch. revision 'main' is resolved to a commit hash at download.
+sources:
+- repo: parler-tts/parler-tts-mini-v1.1
+  revision: main
+download_size_gb: 11.1

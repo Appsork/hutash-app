@@ -1,0 +1,5 @@
+# HF weights to fetch. revision 'main' is resolved to a commit hash at download.
+sources:
+- repo: Systran/faster-whisper-large-v3
+  revision: main
+download_size_gb: 10.3

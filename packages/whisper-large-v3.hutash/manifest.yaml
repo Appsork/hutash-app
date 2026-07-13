@@ -1,0 +1,16 @@
+# Identity card — engine reads this first. runtime: venv
+hutash_format: '1.0'
+id: whisper-large-v3
+name: Whisper Large v3
+version: 1.0.1
+type: model
+runtime: venv
+gpu: optional
+license: MIT
+capabilities:
+- id: stt
+  modality: stt
+platforms:
+- windows
+- linux
+description: High-accuracy multilingual transcription with optional word-level timestamps.

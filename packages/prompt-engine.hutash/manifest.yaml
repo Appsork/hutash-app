@@ -1,0 +1,16 @@
+# Identity card — engine reads this first. runtime: venv
+hutash_format: '1.0'
+id: prompt-engine
+name: Prompt Improver
+version: 1.0.1
+type: model
+runtime: venv
+gpu: none
+license: Apache-2.0
+capabilities:
+- id: improve
+  modality: llm
+platforms:
+- windows
+- linux
+description: Internal prompt-improvement LLM (Qwen3 1.7B GGUF).

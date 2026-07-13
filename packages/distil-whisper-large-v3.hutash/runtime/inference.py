@@ -1,0 +1,106 @@
+"""Distil-Whisper large-v3 inference via faster-whisper (CTranslate2).
+
+Source file â€” hand-written, not generated.
+Implements the hutash_inference contract for capability: stt.
+
+No runtime device detection: docker_manager pulls the GPU or CPU image
+(get_model_image(prefer_cpu=bool)), so the correct CUDA libs are either
+present or not. faster-whisper's CTranslate2 backend with device="auto"
++ compute_type="auto" then uses whatever the image provides â€” CUDA in
+the GPU image, CPU in the slim image.
+"""
+
+from hutash_inference import Inference, capability, resolve_local_weights_dir
+
+
+class DistilWhisperInference(Inference):
+    """Distil-Whisper large-v3 speech-to-text (transcribe + translateâ†’EN)."""
+
+    def load(self) -> None:
+        from faster_whisper import WhisperModel
+
+        # Weights-out: load from the mounted CT2 snapshot (the exact pinned
+        # commit) rather than the "Systran/faster-distil-whisper-large-v3" repo
+        # id, which would hit HuggingFace and fail offline. The snapshot root
+        # holds the CT2 files faster-whisper expects (model.bin, config.json,
+        # tokenizer.json, vocabulary.json, preprocessor_config.json).
+        # device="auto" + compute_type="auto" resolve correctly in both the
+        # GPU image (CUDA libs present â†’ cuda/float16) and the CPU image
+        # (no CUDA â†’ cpu/int8). No torch, no manual detection.
+        self.model = WhisperModel(
+            resolve_local_weights_dir(self.model_id),
+            device="auto",
+            compute_type="auto",
+        )
+
+    @capability("stt")
+    def transcribe(
+        self,
+        file: bytes,
+        language: str = "auto",
+        task: str = "transcribe",
+        word_timestamps: bool = False,
+        initial_prompt: str = "",
+        beam_size: int = 5,
+    ) -> dict:
+        """Transcribe or translate an audio file.
+
+        Args match model.meta.yaml capabilities.stt.{inputs, controls}.
+
+        `language` is the ISO-639-1 code from the YAML's value/label
+        split. The sentinel `"auto"` (and the legacy label-form
+        `"Auto-detect"`, plus the empty string from a cleared field)
+        all map to `None` â†’ faster-whisper's automatic detection.
+        """
+        language_code = (
+            None
+            if language in ("auto", "Auto-detect", "", None)
+            else language
+        )
+        temp_path = self._save_temp_audio(file)
+
+        try:
+            segments_gen, info = self.model.transcribe(
+                temp_path,
+                beam_size=int(beam_size),
+                vad_filter=True,
+                language=language_code,
+                task=task,
+                word_timestamps=bool(word_timestamps),
+                initial_prompt=initial_prompt or None,
+            )
+
+            segments: list[dict] = []
+            full_text_parts: list[str] = []
+            for segment in segments_gen:
+                seg_dict = {
+                    "start": round(segment.start, 2),
+                    "end": round(segment.end, 2),
+                    "text": segment.text.strip(),
+                }
+                if word_timestamps and segment.words:
+                    seg_dict["words"] = [
+                        {
+                            "start": round(w.start, 2),
+                            "end": round(w.end, 2),
+                            "word": w.word,
+                            "probability": round(w.probability, 3),
+                        }
+                        for w in segment.words
+                    ]
+                segments.append(seg_dict)
+                full_text_parts.append(segment.text.strip())
+
+            return {
+                "text": " ".join(full_text_parts),
+                "segments": segments,
+                "language": info.language,
+                "duration": round(info.duration, 2),
+            }
+        finally:
+            import os
+
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
