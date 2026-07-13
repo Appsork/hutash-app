@@ -6,8 +6,6 @@ common:
 - torch==2.11.0+cu128
 - torchaudio==2.11.0+cu128
 - torchvision==0.26.0+cu128
-- xformers
-- triton-windows
 - git+https://github.com/ace-step/ACE-Step.git@1bee4c9f5b43e30995f8d4d33b3919197ce1bd68
 - uvicorn==0.44.0
 - fastapi==0.136.0

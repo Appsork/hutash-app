@@ -14,8 +14,6 @@ variants:
     packages:
     - torch==2.11.0+cu128
     - torchaudio==2.11.0+cu128
-    - xformers
-    - triton-windows
     indexes:
     - https://download.pytorch.org/whl/cu128
   cpu:
