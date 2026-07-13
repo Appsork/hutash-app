@@ -1,7 +1,7 @@
 # HF weights to fetch. revision 'main' is resolved to a commit hash at download.
 sources:
 - repo: nari-labs/Dia-1.6B-0626
-  revision: main
+  revision: ef2795fcc29c5abe6ffc91fd33808588b49bbc66
 extra:
 - repo: descript/dac_44khz
   revision: c1bc521685adf9cfe247bc39a5ca58917eda1ac4

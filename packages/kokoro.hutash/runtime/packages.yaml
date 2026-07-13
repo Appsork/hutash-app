@@ -1,17 +1,24 @@
-# Python deps installed into the model venv (hutash-inference first).
+# common + per-hardware variants (gpu/cpu). hutashd picks a
+# variant by GPU detection at install; the package declares both.
 python: '3.11'
-packages:
+common:
 - hutash-inference
-- name: torch==2.11.0
-  index_url: https://download.pytorch.org/whl/cpu
-- name: torchaudio==2.11.0
-  index_url: https://download.pytorch.org/whl/cpu
+- torch==2.11.0
+- torchaudio==2.11.0
 - kokoro==0.9.4
 - soundfile
 - uvicorn
 - fastapi
-- name: en_core_web_sm==3.8.0
-  url: https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+- https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+variants:
+  gpu:
+    packages: []
+    indexes:
+    - https://download.pytorch.org/whl/cpu
+  cpu:
+    packages: []
+    indexes:
+    - https://download.pytorch.org/whl/cpu
 system_packages:
 - build-essential
 - git

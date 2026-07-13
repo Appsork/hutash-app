@@ -1,23 +1,29 @@
-# Python deps installed into the model venv (hutash-inference first).
+# common + per-hardware variants (gpu/cpu). hutashd picks a
+# variant by GPU detection at install; the package declares both.
 python: '3.11'
-packages:
+common:
 - hutash-inference
-- name: torch==2.11.0+cu128
-  index_url: https://download.pytorch.org/whl/cu128
-- name: torchaudio==2.11.0+cu128
-  index_url: https://download.pytorch.org/whl/cu128
-- xformers
-- triton
-- name: torch==2.11.0+cpu
-  index_url: https://download.pytorch.org/whl/cpu
-- name: torchaudio==2.11.0+cpu
-  index_url: https://download.pytorch.org/whl/cpu
 - parler-tts==0.2.3
 - transformers==4.46.1
 - soundfile==0.13.1
 - uvicorn==0.44.0
 - fastapi==0.136.0
 - python-multipart==0.0.26
+variants:
+  gpu:
+    packages:
+    - torch==2.11.0+cu128
+    - torchaudio==2.11.0+cu128
+    - xformers
+    - triton-windows
+    indexes:
+    - https://download.pytorch.org/whl/cu128
+  cpu:
+    packages:
+    - torch==2.11.0+cpu
+    - torchaudio==2.11.0+cpu
+    indexes:
+    - https://download.pytorch.org/whl/cpu
 system_packages:
 - build-essential
 - git

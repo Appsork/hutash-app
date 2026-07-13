@@ -9,6 +9,8 @@ preset list. Boilerplate (FastAPI, routing, HTTP) is provided by the
 hutash_inference library â€” this file contains only model-specific code.
 """
 
+import os
+
 import torch
 
 from hutash_inference import Inference, capability, resolve_local_weights_dir
@@ -61,11 +63,15 @@ class ParlerTTSMiniInference(Inference):
         # uses the text encoder's own tokenizer (google/flan-t5-large) — a
         # SEPARATE HF repo. The text-encoder WEIGHTS are already inside this
         # model's safetensors; only the tokenizer is needed, so it is baked
-        # into the image at /app/flan-t5-tokenizer (see Dockerfile; North Star
-        # §3) and loaded offline rather than from
+        # bundled alongside this model at <model_dir>/flan-t5-tokenizer and
+        # loaded offline rather than from
         # `self.model.config.text_encoder._name_or_path`, which would hit HF.
+        # The model dir is /app inside a container image and the package's run
+        # dir in a native venv — HUTASH_MODEL_DIR points at whichever applies.
+        model_dir = os.environ.get("HUTASH_MODEL_DIR", "/app")
+        tokenizer_path = os.path.join(model_dir, "flan-t5-tokenizer")
         self.description_tokenizer = AutoTokenizer.from_pretrained(
-            "/app/flan-t5-tokenizer", local_files_only=True,
+            tokenizer_path, local_files_only=True,
         )
         self.sample_rate = self.model.config.sampling_rate
         self.logger.info(

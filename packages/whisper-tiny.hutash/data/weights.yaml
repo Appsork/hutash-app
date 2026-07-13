@@ -1,5 +1,5 @@
 # HF weights to fetch. revision 'main' is resolved to a commit hash at download.
 sources:
 - repo: Systran/faster-whisper-tiny
-  revision: main
+  revision: d90ca5fe260221311c53c58e660288d3deb8d356
 download_size_gb: 0.7

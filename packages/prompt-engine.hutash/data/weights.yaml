@@ -1,5 +1,5 @@
 # HF weights to fetch. revision 'main' is resolved to a commit hash at download.
 sources:
 - repo: unsloth/Qwen3-1.7B-GGUF
-  revision: main
+  revision: d7f544eead698dbd1f15126ef60b45a1e1933222
 download_size_gb: 1.6

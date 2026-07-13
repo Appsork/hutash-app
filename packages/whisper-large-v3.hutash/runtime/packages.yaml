@@ -1,18 +1,23 @@
-# Python deps installed into the model venv (hutash-inference first).
+# common + per-hardware variants (gpu/cpu). hutashd picks a
+# variant by GPU detection at install; the package declares both.
 python: '3.11'
-packages:
+common:
 - hutash-inference
 - faster-whisper==1.2.1
 - uvicorn==0.47.0
 - fastapi==0.136.1
 - python-multipart==0.0.29
-- nvidia-cublas-cu12
-- nvidia-cudnn-cu12
-- nvidia-cufft-cu12
-- nvidia-curand-cu12
-- nvidia-cusolver-cu12
-- nvidia-cusparse-cu12
-- nvidia-cuda-runtime-cu12
+variants:
+  gpu:
+    packages:
+    - nvidia-cublas-cu12
+    - nvidia-cudnn-cu12
+    - nvidia-cufft-cu12
+    - nvidia-curand-cu12
+    - nvidia-cusolver-cu12
+    - nvidia-cusparse-cu12
+    - nvidia-cuda-runtime-cu12
+    indexes: []
 system_packages:
 - build-essential
 - git

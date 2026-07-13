@@ -12,7 +12,7 @@ env:
   HUTASH_MODEL_DIR: '{model_dir}'
   HF_HUB_CACHE: '{weights_dir}'
   HF_HUB_OFFLINE: '1'
-  HUTASH_HF_REVISION: main
+  HUTASH_HF_REVISION: 82cd0d7b6322bd28cd4e830fe675ddb6180ce36c
 port: 8000
 health_endpoint: /health
 health_timeout: 120
