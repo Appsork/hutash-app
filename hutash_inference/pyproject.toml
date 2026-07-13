@@ -1,0 +1,42 @@
+# hutash-inference — the shared HTTP inference framework every Hutash model
+# imports. Making it a real, installable package (rather than a folder copied
+# next to each model or put on sys.path) is what lets a model's inference.py do
+#
+#     from hutash_inference import Inference, capability
+#
+# and have it resolve inside the model's own venv. hutashd installs this package
+# into a model venv first, then the model's own dependencies — the BentoML /
+# MLflow / TorchServe pattern: the framework is a package, models import it.
+#
+# The module ships as a flat layout (its .py files sit directly in this folder),
+# so package-dir maps the package name `hutash_inference` to this directory. That
+# keeps this pyproject.toml inside hutash_inference/ while still installing the
+# folder as the importable `hutash_inference` package.
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hutash-inference"
+version = "0.2.0"
+description = "Shared HTTP inference framework for Hutash models"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    # The server parses multipart form uploads (STT/audio models POST audio as
+    # multipart) via request.form(); FastAPI requires python-multipart for that
+    # path, so it is a hard framework dependency, not a per-model one.
+    "python-multipart",
+]
+
+[project.urls]
+Homepage = "https://github.com/Appsork/hutash"
+
+# Flat layout: the package `hutash_inference` lives in this directory (its .py
+# files are siblings of this file), not a nested hutash_inference/ subfolder.
+[tool.setuptools]
+packages = ["hutash_inference"]
+package-dir = { "hutash_inference" = "." }

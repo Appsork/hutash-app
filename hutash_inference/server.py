@@ -24,6 +24,7 @@ import importlib.util
 import inspect
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -41,10 +42,32 @@ from hutash_inference.logging import configure_logging
 from hutash_inference.validation import validate_inference_matches_manifest
 
 
-# Paths inside the container
-MANIFEST_PATH = Path("/app/manifest.json")
-INFERENCE_MODULE_PATH = Path("/app/inference.py")
-THIRD_PARTY_LICENSES_PATH = Path("/app/THIRD_PARTY_LICENSES.txt")
+def model_dir() -> Path:
+    """Directory holding this model's manifest.json + inference.py.
+
+    In a container these live at ``/app`` (the image bakes them there). In a
+    native venv there is no ``/app``; hutashd points ``HUTASH_MODEL_DIR`` at the
+    model's package directory instead. Resolution order:
+    ``HUTASH_MODEL_DIR`` → ``HUTASH_APP_DIR`` → ``/app`` (the container default,
+    so existing images are unaffected).
+    """
+    d = os.environ.get("HUTASH_MODEL_DIR") or os.environ.get("HUTASH_APP_DIR")
+    return Path(d) if d else Path("/app")
+
+
+# Model file locations, resolved at call time so the same server code runs both
+# in a container (/app) and in a native venv (HUTASH_MODEL_DIR). Kept as
+# module-level accessors for readability at the call sites below.
+def _manifest_path() -> Path:
+    return model_dir() / "manifest.json"
+
+
+def _inference_module_path() -> Path:
+    return model_dir() / "inference.py"
+
+
+def _third_party_licenses_path() -> Path:
+    return model_dir() / "THIRD_PARTY_LICENSES.txt"
 
 
 # Composite primitive fanout â€” when an input's declared type is a key
@@ -64,20 +87,22 @@ COMPOSITE_FANOUT: dict[str, tuple[str, ...]] = {
 
 
 def load_manifest() -> dict:
-    """Load and parse manifest.json from /app/."""
-    if not MANIFEST_PATH.exists():
-        raise ModelLoadError(f"Manifest not found at {MANIFEST_PATH}")
-    with open(MANIFEST_PATH) as f:
+    """Load and parse the model's manifest.json (see model_dir())."""
+    manifest_path = _manifest_path()
+    if not manifest_path.exists():
+        raise ModelLoadError(f"Manifest not found at {manifest_path}")
+    with open(manifest_path) as f:
         return json.load(f)
 
 
 def load_inference_module():
-    """Dynamically import /app/inference.py."""
-    if not INFERENCE_MODULE_PATH.exists():
-        raise ModelLoadError(f"inference.py not found at {INFERENCE_MODULE_PATH}")
+    """Dynamically import the model's inference.py (see model_dir())."""
+    inference_path = _inference_module_path()
+    if not inference_path.exists():
+        raise ModelLoadError(f"inference.py not found at {inference_path}")
 
     spec = importlib.util.spec_from_file_location(
-        "inference", INFERENCE_MODULE_PATH
+        "inference", inference_path
     )
     module = importlib.util.module_from_spec(spec)
     sys.modules["inference"] = module
@@ -323,12 +348,11 @@ def create_app() -> FastAPI:
                 status_code=503,
                 content={"status": "not_ready", "reason": "model_not_loaded"},
             )
-        if not THIRD_PARTY_LICENSES_PATH.exists():
-            return JSONResponse(
-                status_code=503,
-                content={"status": "not_ready", "reason": "licenses_missing"},
-            )
-        if not MANIFEST_PATH.exists():
+        # THIRD_PARTY_LICENSES.txt is generated at container-build time and may
+        # be absent in a native venv install, so it does not gate readiness —
+        # /third-party-licenses simply 404s when it is missing. Model-loaded +
+        # manifest-present is the readiness contract that holds in both runtimes.
+        if not _manifest_path().exists():
             return JSONResponse(
                 status_code=503,
                 content={"status": "not_ready", "reason": "manifest_missing"},
@@ -347,13 +371,14 @@ def create_app() -> FastAPI:
         so the desktop app's Settings â†’ About / Licenses tab can display
         per-container Python-package attributions for the live fleet.
         """
-        if not THIRD_PARTY_LICENSES_PATH.exists():
+        licenses_path = _third_party_licenses_path()
+        if not licenses_path.exists():
             raise HTTPException(
                 status_code=404,
-                detail="THIRD_PARTY_LICENSES.txt not present in this image",
+                detail="THIRD_PARTY_LICENSES.txt not present in this install",
             )
         return Response(
-            content=THIRD_PARTY_LICENSES_PATH.read_text(encoding="utf-8"),
+            content=licenses_path.read_text(encoding="utf-8"),
             media_type="text/plain; charset=utf-8",
         )
 
