@@ -1,5 +1,0 @@
-# HF weights to fetch. revision 'main' is resolved to a commit hash at download.
-sources:
-- repo: ACE-Step/ACE-Step-v1-3.5B
-  revision: 82cd0d7b6322bd28cd4e830fe675ddb6180ce36c
-download_size_gb: 15.8

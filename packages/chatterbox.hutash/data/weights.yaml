@@ -1,5 +1,0 @@
-# HF weights to fetch. revision 'main' is resolved to a commit hash at download.
-sources:
-- repo: ResembleAI/chatterbox
-  revision: ef85ce7bef2f3f1a74d0d837d379d2fcb68203cd
-download_size_gb: 10.8
