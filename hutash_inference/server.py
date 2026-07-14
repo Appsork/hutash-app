@@ -359,6 +359,27 @@ def create_app() -> FastAPI:
             )
         return {"status": "ok"}
 
+    @app.post("/offload")
+    def offload():
+        """Move the model off the GPU into RAM to free VRAM, keeping the process
+        alive. The engine calls this to make room for another model — far faster
+        than killing and reloading. Idempotent.
+        """
+        try:
+            return instance.offload()
+        except Exception as e:  # noqa: BLE001 — boundary guard
+            raise HTTPException(status_code=500, detail=f"offload failed: {type(e).__name__}: {e}") from e
+
+    @app.post("/reload")
+    def reload_model():
+        """Move the model back onto the GPU (from RAM). Fast — weights are
+        already resident. The engine calls this before the model is next used.
+        """
+        try:
+            return instance.reload()
+        except Exception as e:  # noqa: BLE001 — boundary guard
+            raise HTTPException(status_code=500, detail=f"reload failed: {type(e).__name__}: {e}") from e
+
     @app.get("/manifest")
     def get_manifest():
         return manifest
