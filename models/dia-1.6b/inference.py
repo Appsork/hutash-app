@@ -53,25 +53,22 @@ def _resolve_dac_dir() -> str:
 
 
 def _resolve_device(default: str = "cuda") -> str:
-    """Resolve HUTASH_DEVICE (cuda | auto | cpu | mps) to a concrete device.
+    """Resolve HUTASH_DEVICE (cuda | cuda:N | mps | cpu | auto) to a device.
 
-    The engine injects HUTASH_DEVICE from its detected compute mode. "auto"
-    picks the best available accelerator; an explicit "cuda"/"mps" that is not
-    actually present falls back to "cpu", so a GPU model still runs (slowly) on
-    a CPU-only host instead of crashing.
+    The engine injects HUTASH_DEVICE from its detected compute mode and is the
+    source of truth. An explicit device (cuda, cuda:N, mps, cpu) is returned
+    verbatim — we do NOT re-check torch.cuda.is_available() to second-guess the
+    engine. Only "auto" (the engine explicitly asking us to detect) resolves to
+    the best available accelerator.
     """
     import torch
 
     want = os.environ.get("HUTASH_DEVICE", default)
-    has_mps = bool(
-        getattr(torch.backends, "mps", None) and torch.backends.mps.is_available()
-    )
     if want == "auto":
+        has_mps = bool(
+            getattr(torch.backends, "mps", None) and torch.backends.mps.is_available()
+        )
         return "cuda" if torch.cuda.is_available() else ("mps" if has_mps else "cpu")
-    if want == "cuda" and not torch.cuda.is_available():
-        return "cpu"
-    if want == "mps" and not has_mps:
-        return "cpu"
     return want
 
 

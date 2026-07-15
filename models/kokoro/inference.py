@@ -15,20 +15,20 @@ from hutash_inference.errors import GenerationError
 
 
 def _resolve_device(default: str = "cuda") -> str:
-    """Resolve HUTASH_DEVICE (cuda | auto | cpu | mps) to a concrete device,
-    falling back to cpu when the requested accelerator is not present."""
+    """Resolve HUTASH_DEVICE (cuda | cuda:N | mps | cpu | auto) to a device.
+
+    The engine is the source of truth: an explicit device (cuda, cuda:N, mps,
+    cpu) is returned verbatim without re-checking torch.cuda.is_available().
+    Only "auto" resolves to the best available accelerator. Kokoro's default is
+    "cpu" (it is a CPU model unless the engine moves it onto an accelerator)."""
     import torch
 
     want = os.environ.get("HUTASH_DEVICE", default)
-    has_mps = bool(
-        getattr(torch.backends, "mps", None) and torch.backends.mps.is_available()
-    )
     if want == "auto":
+        has_mps = bool(
+            getattr(torch.backends, "mps", None) and torch.backends.mps.is_available()
+        )
         return "cuda" if torch.cuda.is_available() else ("mps" if has_mps else "cpu")
-    if want == "cuda" and not torch.cuda.is_available():
-        return "cpu"
-    if want == "mps" and not has_mps:
-        return "cpu"
     return want
 
 

@@ -46,25 +46,24 @@ from hutash_inference.errors import GenerationError  # noqa: E402
 
 
 def _resolve_device(default: str = "cuda") -> str:
-    """Resolve HUTASH_DEVICE (cuda | auto | cpu | mps) to a concrete device.
+    """Resolve HUTASH_DEVICE (cuda | cuda:N | mps | cpu | auto) to a device.
 
-    The engine injects HUTASH_DEVICE from its detected compute mode. "auto"
-    picks the best available accelerator; an explicit "cuda"/"mps" that is not
-    actually present falls back to "cpu", so a GPU model still runs (slowly) on
-    a CPU-only host instead of crashing.
+    The engine injects HUTASH_DEVICE from its detected compute mode and is the
+    source of truth. An explicit device (cuda, cuda:N, mps, cpu) is returned
+    verbatim — we do NOT re-check torch.cuda.is_available() to second-guess the
+    engine. Second-guessing an explicit "cuda"/"cuda:N" is what mis-mapped a
+    valid GPU placement into an invalid "cuda:-1" / a silent CPU fallback. Only
+    "auto" (the engine explicitly asking us to detect) resolves to the best
+    available accelerator.
     """
     import torch
 
     want = os.environ.get("HUTASH_DEVICE", default)
-    has_mps = bool(
-        getattr(torch.backends, "mps", None) and torch.backends.mps.is_available()
-    )
     if want == "auto":
+        has_mps = bool(
+            getattr(torch.backends, "mps", None) and torch.backends.mps.is_available()
+        )
         return "cuda" if torch.cuda.is_available() else ("mps" if has_mps else "cpu")
-    if want == "cuda" and not torch.cuda.is_available():
-        return "cpu"
-    if want == "mps" and not has_mps:
-        return "cpu"
     return want
 
 
@@ -92,11 +91,14 @@ class ACEStepInference(Inference):
         checkpoint = os.environ.get("ACE_STEP_CHECKPOINT") or resolve_local_weights_dir(
             self.model_id
         )
-        # HUTASH_DEVICE (cuda|auto|cpu|mps) → ACE-Step device_id (GPU 0 / CPU -1).
+        # HUTASH_DEVICE (cuda|cuda:N|auto|cpu|mps) → ACE-Step device_id
+        # (GPU 0 / CPU -1). Any "cuda" flavour (incl. "cuda:0") maps to GPU 0;
+        # a bare `== "cuda"` check here previously turned "cuda:0" into an
+        # invalid "cuda:-1" inside the pipeline.
         device = _resolve_device()
         self.pipeline = ACEStepPipeline(
             checkpoint_dir=checkpoint,
-            device_id=0 if device == "cuda" else -1,
+            device_id=0 if device.startswith("cuda") else -1,
         )
 
     @capability("music")
