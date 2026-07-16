@@ -18,6 +18,7 @@ id: whisper-large-v3
 display_name: Whisper Large v3
 version: 1.0.1
 runtime: container
+type: model_pipeline
 category: model
 compute: any
 license: MIT

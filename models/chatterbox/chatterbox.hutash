@@ -19,6 +19,7 @@ id: chatterbox
 display_name: Chatterbox
 version: 1.0.2
 runtime: container
+type: model_pipeline
 category: model
 compute: any
 license: MIT

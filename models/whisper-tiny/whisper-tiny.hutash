@@ -16,6 +16,7 @@ id: whisper-tiny
 display_name: Whisper Tiny
 version: 1.0.1
 runtime: container
+type: model_pipeline
 category: model
 compute: cpu
 license: MIT
