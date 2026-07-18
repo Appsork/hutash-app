@@ -35,6 +35,12 @@ class PromptEngineInference(Inference):
         # CPU-only.
         _device = os.environ.get("HUTASH_DEVICE", "cpu")
         n_gpu_layers = -1 if (_device.startswith("cuda") or _device == "mps") else 0
+        # Low VRAM: when the engine sets a partial-offload budget, server.py
+        # converts it to a GPU-layer count in HUTASH_GPU_LAYERS. Honour it as an
+        # override; unset → keep the device-based default above (CPU=0, GPU=all).
+        _gpu_layers_override = os.environ.get("HUTASH_GPU_LAYERS")
+        if _gpu_layers_override is not None:
+            n_gpu_layers = int(_gpu_layers_override)
         self.model = Llama(
             model_path=model_files[0],
             n_ctx=2048,

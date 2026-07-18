@@ -20,6 +20,7 @@ host (tests, smoke checks) never triggers the container-only startup
 path. `create_app()` is only invoked when explicitly called.
 """
 
+import functools
 import importlib.util
 import inspect
 import json
@@ -41,13 +42,156 @@ from hutash_inference.io_handlers import parse_input, serialize_output
 from hutash_inference.logging import configure_logging
 from hutash_inference.validation import validate_inference_matches_manifest
 
-# Low VRAM support. server.py does not load weights itself — each model's
-# inference.py calls from_pretrained() — so it does not invoke this directly.
-# It is imported (and re-exported) here so a model's inference.py can reach it
-# via either `from hutash_inference import get_device_map_kwargs` or
-# `from hutash_inference.server import get_device_map_kwargs`, and so an import
-# error surfaces at container startup rather than at first inference.
-from hutash_inference.vram import get_device_map_kwargs  # noqa: F401
+logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Low VRAM mode — framework-aware device placement
+# ---------------------------------------------------------------------------
+# The engine decides, per host, how much VRAM a model may use and sets two env
+# vars in the model process when Low VRAM mode is active:
+#     HUTASH_VRAM_BUDGET_MB   free VRAM (MB) the model may claim
+#     HUTASH_MODEL_FRAMEWORK  huggingface | llama-cpp | faster-whisper | custom
+# server.py translates that budget into whatever knob the model's framework
+# actually understands, so a model's inference.py needs NO Low-VRAM code of its
+# own (the old get_device_map_kwargs import is gone).
+
+
+def _apply_low_vram() -> None:
+    """Translate the engine's VRAM budget into framework-specific signals.
+
+    Runs at import, before any model loads. No budget → no-op (the model loads
+    exactly as before). For HuggingFace it records the device_map/max_memory the
+    from_pretrained hook injects; for llama-cpp an n_gpu_layers count the model
+    reads back from HUTASH_GPU_LAYERS; other frameworks have no partial-load knob
+    and just load normally.
+    """
+    budget = os.environ.get("HUTASH_VRAM_BUDGET_MB")
+    framework = os.environ.get("HUTASH_MODEL_FRAMEWORK")
+    if not budget:
+        return  # Low VRAM not active, load normally
+
+    try:
+        budget_mb = int(budget)
+    except ValueError:
+        logger.warning("Invalid HUTASH_VRAM_BUDGET_MB=%s, ignoring", budget)
+        return
+
+    logger.info("Low VRAM mode: %dMB budget, framework=%s", budget_mb, framework)
+
+    if framework == "huggingface":
+        # accelerate/transformers do NOT read these as env vars — device_map and
+        # max_memory are from_pretrained KWARGS. We stash the intent here and the
+        # from_pretrained hook (installed before inference.py loads) reads it back
+        # and injects the kwargs. See _install_hf_low_vram_hook.
+        os.environ["ACCELERATE_DEVICE_MAP"] = "auto"
+        os.environ["ACCELERATE_MAX_MEMORY"] = f'{{"0": "{budget_mb}MB", "cpu": "48GB"}}'
+        logger.info("HuggingFace: device_map=auto, max_memory GPU=%dMB", budget_mb)
+
+    elif framework == "llama-cpp":
+        # ~300MB per GGUF layer (conservative across quantizations). The model's
+        # inference.py reads HUTASH_GPU_LAYERS and passes it as n_gpu_layers.
+        gpu_layers = max(1, budget_mb // 300)
+        os.environ["HUTASH_GPU_LAYERS"] = str(gpu_layers)
+        logger.info("llama-cpp: n_gpu_layers=%d (from %dMB budget)", gpu_layers, budget_mb)
+
+    else:
+        # faster-whisper, kokoro, chatterbox, custom — no partial-loading knob.
+        # The engine should have blocked this with a red compatibility tag; if we
+        # still got here, just load normally.
+        logger.info(
+            "Framework %s does not support partial loading, loading normally",
+            framework,
+        )
+
+
+def _patch_from_pretrained(target_cls, device_map, max_memory) -> None:
+    """Wrap one transformers class's ``from_pretrained`` classmethod to inject
+    ``device_map`` / ``max_memory`` when the caller didn't pass them.
+
+    Preserves the ``cls`` binding (so a subclass still loads as itself, not the
+    patched base) and is idempotent via a sentinel attribute. Classes that only
+    inherit ``from_pretrained`` (define none of their own) are skipped — the base
+    patch covers them.
+    """
+    if getattr(target_cls, "_hutash_low_vram_patched", False):
+        return
+    raw = target_cls.__dict__.get("from_pretrained")
+    if raw is None:
+        return
+    orig_func = raw.__func__ if isinstance(raw, classmethod) else raw
+
+    @functools.wraps(orig_func)
+    def wrapper(cls, *args, **kwargs):
+        if "device_map" not in kwargs:
+            kwargs["device_map"] = device_map
+            if max_memory is not None and "max_memory" not in kwargs:
+                kwargs["max_memory"] = max_memory
+            logger.info(
+                "Low VRAM: injected device_map=%s into %s.from_pretrained",
+                device_map, getattr(cls, "__name__", cls),
+            )
+        return orig_func(cls, *args, **kwargs)
+
+    target_cls.from_pretrained = classmethod(wrapper)
+    target_cls._hutash_low_vram_patched = True
+
+
+def _install_hf_low_vram_hook() -> None:
+    """Make transformers honour the Low VRAM budget for HuggingFace models.
+
+    RESEARCH NOTE: transformers/accelerate do NOT read ACCELERATE_DEVICE_MAP or
+    ACCELERATE_MAX_MEMORY from the environment — ``device_map`` and ``max_memory``
+    are ``from_pretrained`` keyword arguments. accelerate's own env vars configure
+    the ``Accelerator`` / ``accelerate launch``, not ``from_pretrained``. So to
+    place layers across GPU/CPU by budget WITHOUT editing each model's
+    inference.py, we wrap ``from_pretrained`` on the common transformers base
+    classes to inject those kwargs. Called before the model's inference.py is
+    imported (in create_app), so its from_pretrained call gets the budget.
+
+    No-op when Low VRAM huggingface mode is inactive, or when transformers is not
+    importable (a non-HuggingFace model venv has nothing to patch).
+    """
+    device_map = os.environ.get("ACCELERATE_DEVICE_MAP")
+    if not device_map:
+        return  # only _apply_low_vram's huggingface branch sets this
+
+    max_memory = None
+    raw_mm = os.environ.get("ACCELERATE_MAX_MEMORY")
+    if raw_mm:
+        try:
+            parsed = json.loads(raw_mm)
+            # transformers wants int keys for GPU ids ("0" -> 0); "cpu"/"disk" stay str.
+            max_memory = {
+                (int(k) if isinstance(k, str) and k.isdigit() else k): v
+                for k, v in parsed.items()
+            }
+        except (ValueError, AttributeError):
+            logger.warning("Low VRAM: could not parse ACCELERATE_MAX_MEMORY=%s", raw_mm)
+
+    try:
+        from transformers import PreTrainedModel
+    except Exception:  # noqa: BLE001 — transformers absent in non-HF venvs
+        logger.info("Low VRAM: transformers not importable; HuggingFace hook skipped")
+        return
+
+    _patch_from_pretrained(PreTrainedModel, device_map, max_memory)
+    try:
+        from transformers.models.auto.auto_factory import _BaseAutoModelClass
+
+        _patch_from_pretrained(_BaseAutoModelClass, device_map, max_memory)
+    except Exception:  # noqa: BLE001 — Auto* internals moved; base patch still covers most
+        pass
+    logger.info(
+        "Low VRAM: HuggingFace from_pretrained hook installed (device_map=%s)",
+        device_map,
+    )
+
+
+# Apply the framework routing at import — before create_app() imports any model
+# inference.py. Only reads/writes env vars, so importing server.py on the host
+# (tests, smoke checks) with no budget set stays a no-op.
+_apply_low_vram()
 
 
 def model_dir() -> Path:
@@ -306,6 +450,11 @@ def create_app() -> FastAPI:
     manifest = load_manifest()
     model_id = manifest.get("model_id", "unknown")
     configure_logging(model_id)
+
+    # Low VRAM (HuggingFace): install the from_pretrained device-map hook BEFORE
+    # the model's inference.py is imported, so its from_pretrained honours the
+    # engine's VRAM budget. No-op unless HF Low VRAM mode is active.
+    _install_hf_low_vram_hook()
 
     module = load_inference_module()
     InferenceClass = find_inference_class(module)

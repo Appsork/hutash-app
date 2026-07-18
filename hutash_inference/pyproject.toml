@@ -19,7 +19,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hutash-inference"
-version = "0.2.0"
+version = "0.2.2"
 description = "Shared HTTP inference framework for Hutash models"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
@@ -30,10 +30,10 @@ dependencies = [
     # multipart) via request.form(); FastAPI requires python-multipart for that
     # path, so it is a hard framework dependency, not a per-model one.
     "python-multipart",
-    # Low VRAM mode (hutash_inference.vram.get_device_map_kwargs) hands
-    # device_map="auto" + max_memory to transformers from_pretrained(), which
-    # dispatches layers across GPU/CPU via accelerate. It is a framework
-    # dependency because the utility ships here, not per-model.
+    # Low VRAM mode: server.py's from_pretrained hook injects device_map="auto"
+    # + max_memory into transformers loads, which dispatches layers across
+    # GPU/CPU via accelerate. It is a framework dependency because the hook ships
+    # here, not per-model.
     "accelerate>=0.28.0",
 ]
 
