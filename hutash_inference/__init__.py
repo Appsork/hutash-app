@@ -17,6 +17,7 @@ from hutash_inference.errors import (
     ModelLoadError,
     GenerationError,
 )
+from hutash_inference.vram import get_device_map_kwargs
 
 __version__ = "0.2.0"
 
@@ -28,4 +29,5 @@ __all__ = [
     "ValidationError",
     "ModelLoadError",
     "GenerationError",
+    "get_device_map_kwargs",
 ]

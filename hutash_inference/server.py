@@ -41,6 +41,14 @@ from hutash_inference.io_handlers import parse_input, serialize_output
 from hutash_inference.logging import configure_logging
 from hutash_inference.validation import validate_inference_matches_manifest
 
+# Low VRAM support. server.py does not load weights itself — each model's
+# inference.py calls from_pretrained() — so it does not invoke this directly.
+# It is imported (and re-exported) here so a model's inference.py can reach it
+# via either `from hutash_inference import get_device_map_kwargs` or
+# `from hutash_inference.server import get_device_map_kwargs`, and so an import
+# error surfaces at container startup rather than at first inference.
+from hutash_inference.vram import get_device_map_kwargs  # noqa: F401
+
 
 def model_dir() -> Path:
     """Directory holding this model's manifest.json + inference.py.
