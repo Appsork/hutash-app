@@ -23,7 +23,7 @@ id: ace-step-1.5
 display_name: ACE-Step 1.5
 version: 1.0.1
 runtime: container
-type: model_pipeline
+type: pipeline
 category: model
 compute: gpu
 license: Apache-2.0

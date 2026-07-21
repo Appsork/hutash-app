@@ -18,7 +18,7 @@ id: distil-whisper-large-v3
 display_name: Distil-Whisper Large v3
 version: 1.0.1
 runtime: container
-type: model_pipeline
+type: pipeline
 category: model
 compute: any
 license: MIT

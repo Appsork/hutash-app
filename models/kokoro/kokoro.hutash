@@ -20,7 +20,7 @@ id: kokoro
 display_name: Kokoro
 version: 1.0.2
 runtime: container
-type: model_pipeline
+type: pipeline
 category: model
 compute: cpu
 license: Apache-2.0

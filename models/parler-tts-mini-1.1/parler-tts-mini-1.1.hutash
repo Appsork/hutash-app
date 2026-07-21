@@ -26,7 +26,7 @@ id: parler-tts-mini-1.1
 display_name: Parler-TTS Mini
 version: 1.0.1
 runtime: container
-type: model_pipeline
+type: pipeline
 category: model
 compute: any
 license: Apache-2.0
