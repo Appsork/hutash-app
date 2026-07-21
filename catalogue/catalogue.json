@@ -250,6 +250,7 @@
       "type": "pipeline",
       "weight_category": "LLM",
       "display_name": "Prompt Improver",
+      "description": "Internal prompt-improvement LLM (Qwen3 1.7B GGUF).",
       "modality": "llm",
       "version": "1.0.1",
       "license": "Apache-2.0",
