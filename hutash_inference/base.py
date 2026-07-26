@@ -112,6 +112,11 @@ class Inference:
         self.logger = logging.getLogger(self.__class__.__name__)
         self._is_loaded = False
         self._offloaded = False  # True when moved off the GPU into RAM
+        # CUDA-host-registered (page-locked) CPU storages while parked, so the OS
+        # cannot swap a warm model's weights to the page file. Each entry is a
+        # (ptr, nbytes) pair; unregistered on reload. Best effort — stays empty
+        # when pinning is unavailable (no CUDA, or registration fails).
+        self._pinned_host: list = []
 
     def load(self) -> None:
         """Default Tier-1 weights-out loader for standard HuggingFace models.
@@ -281,15 +286,22 @@ class Inference:
                 self.logger.warning("offload: could not move %s: %s", type(module).__name__, e)
         self._set_device_holders("cpu")
         self._empty_gpu_cache()
+        pinned = self._pin_cpu_memory()
         self._offloaded = True
-        self.logger.info("offloaded %s to RAM (%d module(s))", self.model_id, moved)
-        return {"status": "offloaded", "device": "cpu", "moved": moved}
+        self.logger.info(
+            "offloaded %s to RAM (%d module(s), %d storage(s) pinned)", self.model_id, moved, pinned
+        )
+        return {"status": "offloaded", "device": "cpu", "moved": moved, "pinned": pinned}
 
     def reload(self) -> dict:
         """Move the model back onto its target device (GPU). Fast — the weights
         are already resident in RAM. Override alongside offload() when custom.
         """
         target = self.target_device()
+        # Unpin the host storages BEFORE moving back to the GPU: once the tensors
+        # leave CPU their registration is moot, and unregistering first avoids
+        # holding page-locked pages we no longer need.
+        self._unpin_cpu_memory()
         moved = 0
         for module in self._offloadable_modules():
             try:
@@ -401,6 +413,87 @@ class Inference:
                 torch.mps.empty_cache()
         except Exception:
             pass
+
+    # ---- Warm-tier memory pinning (mlock equivalent) ---------------------
+    #
+    # A warm (parked) model's weights sit in system RAM. Without pinning, the OS
+    # may swap those pages to the page file under memory pressure — which defeats
+    # the point of warm parking, since an unpark would then fault every page back
+    # in from disk (as slow as a cold reload). Pinning page-locks the CPU storages
+    # via cudaHostRegister so they stay resident. It is BEST EFFORT: on any host
+    # where CUDA host-register is unavailable or a storage cannot be registered
+    # (already-pinned, too large, no pinnable memory), it logs a warning and the
+    # model still parks correctly — just unprotected from swap.
+
+    def _pin_cpu_memory(self) -> int:
+        """Page-lock the offloaded model's CPU storages. Returns the count pinned
+        (0 when unavailable). Never raises — a pin failure only forfeits swap
+        protection, it must not fail the park.
+        """
+        try:
+            import torch
+
+            if not torch.cuda.is_available():
+                return 0  # host-register needs a CUDA context
+            cudart = torch.cuda.cudart()
+        except Exception as e:  # noqa: BLE001 — no torch / no CUDA runtime
+            self.logger.warning("park: memory pinning unavailable (%s); warm weights may be swappable", e)
+            return 0
+
+        seen: set = set()
+        pinned = 0
+        for tensor in self._cpu_storages_to_pin():
+            try:
+                storage = tensor.untyped_storage() if hasattr(tensor, "untyped_storage") else tensor.storage()
+                ptr = storage.data_ptr()
+                nbytes = storage.nbytes() if hasattr(storage, "nbytes") else storage.size() * tensor.element_size()
+                if ptr == 0 or ptr in seen or nbytes <= 0:
+                    continue
+                seen.add(ptr)
+                cudart.cudaHostRegister(ptr, nbytes, 0)  # 0 = cudaHostRegisterDefault
+                self._pinned_host.append((ptr, nbytes))
+                pinned += 1
+            except Exception as e:  # noqa: BLE001 — per-storage best effort
+                self.logger.warning("park: could not pin a %s storage: %s", self.model_id, e)
+        return pinned
+
+    def _unpin_cpu_memory(self) -> None:
+        """Release every host-registered storage recorded on park. Best effort —
+        a failed unregister is logged and the entry dropped so reload proceeds.
+        """
+        if not self._pinned_host:
+            return
+        try:
+            import torch
+
+            cudart = torch.cuda.cudart()
+        except Exception:  # noqa: BLE001 — nothing to unregister against
+            self._pinned_host = []
+            return
+        for ptr, _nbytes in self._pinned_host:
+            try:
+                cudart.cudaHostUnregister(ptr)
+            except Exception as e:  # noqa: BLE001 — per-storage best effort
+                self.logger.warning("unpark: could not unpin storage: %s", e)
+        self._pinned_host = []
+
+    def _cpu_storages_to_pin(self) -> list:
+        """The parameter + buffer tensors (currently on CPU) of the offloaded
+        modules — the storages worth page-locking while parked.
+        """
+        tensors: list = []
+        try:
+            import torch
+        except Exception:
+            return tensors
+        for module in self._offloadable_modules():
+            try:
+                for t in list(module.parameters()) + list(module.buffers()):
+                    if t is not None and getattr(t, "device", None) is not None and t.device.type == "cpu":
+                        tensors.append(t)
+            except Exception:  # noqa: BLE001 — a module without params/buffers
+                continue
+        return tensors
 
     # ---- Helper methods for common I/O conversions ----
 

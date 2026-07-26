@@ -87,5 +87,34 @@ class ParkUnparkEndpointTest(unittest.TestCase):
         )
 
 
+class BaseOffloadPinningTest(unittest.TestCase):
+    """base.offload()/reload() must never crash on the pinning path — on a host
+    without torch/CUDA, parking still succeeds with 0 storages pinned (Part F).
+    """
+
+    def _model(self):
+        from hutash_inference.base import Inference
+
+        class M(Inference):
+            def load(self):
+                pass
+
+        return M(config={"model_id": "t"})
+
+    def test_offload_reports_zero_pinned_without_cuda(self):
+        m = self._model()
+        out = m.offload()
+        self.assertEqual(out["status"], "offloaded")
+        self.assertEqual(out["pinned"], 0)  # no CUDA host-register available here
+        self.assertEqual(m._pinned_host, [])
+
+    def test_reload_clears_pins_and_succeeds(self):
+        m = self._model()
+        m.offload()
+        out = m.reload()
+        self.assertEqual(out["status"], "reloaded")
+        self.assertEqual(m._pinned_host, [])  # unpin drained the list
+
+
 if __name__ == "__main__":
     unittest.main()
