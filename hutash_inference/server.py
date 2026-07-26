@@ -57,6 +57,22 @@ logger = logging.getLogger(__name__)
 # own (the old get_device_map_kwargs import is gone).
 
 
+def _cuda_device_index() -> int:
+    """The CUDA device index the engine selected, parsed from HUTASH_DEVICE.
+
+    HUTASH_DEVICE is "cuda:<n>" (the engine's gpu_device), or "cuda"/""/"cpu"/etc.
+    Returns the integer <n>, or 0 when unset or not a cuda:<n> form. Used to key
+    the Low VRAM max_memory budget to the right GPU on a multi-GPU host.
+    """
+    dev = os.environ.get("HUTASH_DEVICE", "")
+    if dev.startswith("cuda:"):
+        try:
+            return int(dev.split(":", 1)[1])
+        except ValueError:
+            return 0
+    return 0
+
+
 def _apply_low_vram() -> None:
     """Translate the engine's VRAM budget into framework-specific signals.
 
@@ -84,9 +100,17 @@ def _apply_low_vram() -> None:
         # max_memory are from_pretrained KWARGS. We stash the intent here and the
         # from_pretrained hook (installed before inference.py loads) reads it back
         # and injects the kwargs. See _install_hf_low_vram_hook.
+        #
+        # The GPU key is the selected CUDA device index (from HUTASH_DEVICE=cuda:N,
+        # the engine's gpu_device), NOT a hardcoded 0, so on a multi-GPU host the
+        # budget lands on the same device the model runs on. Single-GPU hosts keep
+        # index 0 unchanged.
+        gpu_index = _cuda_device_index()
         os.environ["ACCELERATE_DEVICE_MAP"] = "auto"
-        os.environ["ACCELERATE_MAX_MEMORY"] = f'{{"0": "{budget_mb}MB", "cpu": "48GB"}}'
-        logger.info("HuggingFace: device_map=auto, max_memory GPU=%dMB", budget_mb)
+        os.environ["ACCELERATE_MAX_MEMORY"] = (
+            f'{{"{gpu_index}": "{budget_mb}MB", "cpu": "48GB"}}'
+        )
+        logger.info("HuggingFace: device_map=auto, max_memory GPU[%d]=%dMB", gpu_index, budget_mb)
 
     elif framework == "llama-cpp":
         # ~300MB per GGUF layer (conservative across quantizations). The model's

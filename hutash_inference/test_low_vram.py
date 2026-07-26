@@ -17,6 +17,7 @@ class ApplyLowVramTest(unittest.TestCase):
     _VARS = [
         "HUTASH_VRAM_BUDGET_MB",
         "HUTASH_MODEL_FRAMEWORK",
+        "HUTASH_DEVICE",
         "ACCELERATE_DEVICE_MAP",
         "ACCELERATE_MAX_MEMORY",
         "HUTASH_GPU_LAYERS",
@@ -37,9 +38,22 @@ class ApplyLowVramTest(unittest.TestCase):
         os.environ["HUTASH_MODEL_FRAMEWORK"] = "huggingface"
         _apply_low_vram()
         self.assertEqual(os.environ["ACCELERATE_DEVICE_MAP"], "auto")
+        # No HUTASH_DEVICE → GPU key defaults to 0 (single-GPU host, spec default).
         self.assertEqual(
             os.environ["ACCELERATE_MAX_MEMORY"],
             '{"0": "4000MB", "cpu": "48GB"}',
+        )
+
+    def test_huggingface_max_memory_honours_gpu_device(self):
+        # On a multi-GPU host the engine sets HUTASH_DEVICE=cuda:1 (gpu_device=1);
+        # the budget must land on GPU 1, not a hardcoded 0.
+        os.environ["HUTASH_VRAM_BUDGET_MB"] = "4000"
+        os.environ["HUTASH_MODEL_FRAMEWORK"] = "huggingface"
+        os.environ["HUTASH_DEVICE"] = "cuda:1"
+        _apply_low_vram()
+        self.assertEqual(
+            os.environ["ACCELERATE_MAX_MEMORY"],
+            '{"1": "4000MB", "cpu": "48GB"}',
         )
 
     def test_llama_cpp_calculates_gpu_layers(self):
