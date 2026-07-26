@@ -540,26 +540,51 @@ def create_app() -> FastAPI:
             )
         return {"status": "ok"}
 
-    @app.post("/offload")
-    def offload():
-        """Move the model off the GPU into RAM to free VRAM, keeping the process
-        alive. The engine calls this to make room for another model — far faster
-        than killing and reloading. Idempotent.
+    def _do_park():
+        """Move the model off the GPU into RAM (hot → warm), freeing VRAM while the
+        process stays alive. Idempotent. Shared by /park and its /offload alias.
         """
         try:
             return instance.offload()
         except Exception as e:  # noqa: BLE001 — boundary guard
-            raise HTTPException(status_code=500, detail=f"offload failed: {type(e).__name__}: {e}") from e
+            raise HTTPException(status_code=500, detail=f"park failed: {type(e).__name__}: {e}") from e
 
-    @app.post("/reload")
-    def reload_model():
-        """Move the model back onto the GPU (from RAM). Fast — weights are
-        already resident. The engine calls this before the model is next used.
+    def _do_unpark():
+        """Move the model back onto the GPU (warm → hot). Fast — weights are
+        already resident in RAM. Shared by /unpark and its /reload alias.
         """
         try:
             return instance.reload()
         except Exception as e:  # noqa: BLE001 — boundary guard
-            raise HTTPException(status_code=500, detail=f"reload failed: {type(e).__name__}: {e}") from e
+            raise HTTPException(status_code=500, detail=f"unpark failed: {type(e).__name__}: {e}") from e
+
+    # Warm-parking endpoints (Sarathi Step 2): /park moves weights to CPU RAM
+    # (hot → warm), /unpark moves them back to the GPU (warm → hot). Much faster
+    # than a cold reload from disk because the process stays alive with weights
+    # resident. The engine's tier manager calls these. /offload and /reload are
+    # kept as aliases for the same operations (earlier engine builds used those
+    # names), so a mixed fleet works during a rollout.
+    @app.post("/park")
+    def park():
+        return _do_park()
+
+    @app.post("/unpark")
+    def unpark():
+        return _do_unpark()
+
+    @app.post("/offload")
+    def offload():
+        """Alias of /park — move the model off the GPU into RAM. Kept for
+        backward compatibility with engine builds that call /offload.
+        """
+        return _do_park()
+
+    @app.post("/reload")
+    def reload_model():
+        """Alias of /unpark — move the model back onto the GPU. Kept for
+        backward compatibility with engine builds that call /reload.
+        """
+        return _do_unpark()
 
     @app.get("/manifest")
     def get_manifest():
