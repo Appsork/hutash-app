@@ -1,5 +1,11 @@
 CLAUDE.md
-.claude/
+# Claude Code local state. .claude/rules/ ARE team-shared and committed —
+# they are the project's own rules, and a rule nobody else can see is not a rule.
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+.claude/projects/
+.claude/todos/
 
 # Python bytecode
 __pycache__/
