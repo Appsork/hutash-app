@@ -348,6 +348,16 @@
   ],
   "apps": [
     {
+      "id": "hivision-idphotos",
+      "name": "HivisionIDPhotos",
+      "description": "AI passport and ID photo maker — remove background, crop, resize, change background color.",
+      "type": "app",
+      "license": "Apache-2.0",
+      "size_display": "",
+      "hutash_file": "apps/hivision-idphotos.hutash",
+      "file": "hivision-idphotos.hutash"
+    },
+    {
       "id": "hutash-studio",
       "name": "Hutash Studio",
       "description": "Local AI creative studio — voiceover, music, transcription, and more, all running on your machine.",
