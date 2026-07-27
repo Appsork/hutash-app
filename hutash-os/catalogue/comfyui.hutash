@@ -118,6 +118,11 @@ entrypoint: python main.py --listen 0.0.0.0 --port 8188 --enable-cors-header --d
 # env var; ComfyUI reads CORS only from the flag above.
 
 metadata:
+  # Externally managed: this app ships its own model download/delete
+  # system, which conflicts with the shared CAMS shelf. Hidden from the
+  # default Store until hutash can manage its full model lifecycle.
+  managed_externally: true
+  advanced_reason: ComfyUI downloads and deletes models through its own manager.
   description: Node-based interface for building Stable Diffusion and other diffusion model workflows.
   category: image-generation
   homepage: https://github.com/comfyanonymous/ComfyUI

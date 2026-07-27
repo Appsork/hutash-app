@@ -48,6 +48,11 @@ health:
 entrypoint: python launch.py --listen --port 7861 --no-download-sd-model --skip-load-model-at-start
 
 metadata:
+  # Externally managed: this app ships its own model download/delete
+  # system, which conflicts with the shared CAMS shelf. Hidden from the
+  # default Store until hutash can manage its full model lifecycle.
+  managed_externally: true
+  advanced_reason: Forge downloads and deletes models through its own UI.
   description: "Forge is a faster, more memory-efficient fork of A1111 optimized for SDXL and Flux."
   category: image-generation
   homepage: https://github.com/lllyasviel/stable-diffusion-webui-forge

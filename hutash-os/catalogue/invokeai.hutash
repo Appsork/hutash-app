@@ -58,6 +58,11 @@ mount_paths:
 entrypoint: invokeai-web
 
 metadata:
+  # Externally managed: this app ships its own model download/delete
+  # system, which conflicts with the shared CAMS shelf. Hidden from the
+  # default Store until hutash can manage its full model lifecycle.
+  managed_externally: true
+  advanced_reason: InvokeAI manages its own model library and install paths.
   description: Professional creative suite for Stable Diffusion with a unified canvas and node editor.
   category: image-generation
   homepage: https://github.com/invoke-ai/InvokeAI

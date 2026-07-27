@@ -131,6 +131,11 @@ mount_paths:
 entrypoint: python infer-web.py --port 7865 --noautoopen
 
 metadata:
+  # Externally managed: this app ships its own model download/delete
+  # system, which conflicts with the shared CAMS shelf. Hidden from the
+  # default Store until hutash can manage its full model lifecycle.
+  managed_externally: true
+  advanced_reason: RVC downloads its own weights outside the shared shelf.
   description: Retrieval-based voice conversion with a web interface for training and inference.
   category: audio
   homepage: https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI

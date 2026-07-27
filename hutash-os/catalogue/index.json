@@ -1,5 +1,6 @@
 {
   "version": "1.0",
+  "_comment": "`apps` is the default Store listing. `advanced` names packages that ship their own model download/delete system, which conflicts with the shared CAMS shelf; they are hidden from the default Store until hutash can manage their full model lifecycle. Their .hutash files are still published and still fetched by the catalogue refresh, so existing installs keep their display metadata \u2014 the manifests carry metadata.managed_externally: true, which is what actually hides them.",
   "apps": [
     {
       "id": "a1111",
@@ -8,18 +9,6 @@
     {
       "id": "anythingllm",
       "file": "anythingllm.hutash"
-    },
-    {
-      "id": "comfyui",
-      "file": "comfyui.hutash"
-    },
-    {
-      "id": "forge",
-      "file": "forge.hutash"
-    },
-    {
-      "id": "invokeai",
-      "file": "invokeai.hutash"
     },
     {
       "id": "localai",
@@ -34,12 +23,26 @@
       "file": "openwebui.hutash"
     },
     {
-      "id": "rvc",
-      "file": "rvc.hutash"
-    },
-    {
       "id": "whisper",
       "file": "whisper.hutash"
+    }
+  ],
+  "advanced": [
+    {
+      "id": "comfyui",
+      "file": "comfyui.hutash"
+    },
+    {
+      "id": "forge",
+      "file": "forge.hutash"
+    },
+    {
+      "id": "invokeai",
+      "file": "invokeai.hutash"
+    },
+    {
+      "id": "rvc",
+      "file": "rvc.hutash"
     }
   ]
 }
