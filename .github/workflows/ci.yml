@@ -8,8 +8,10 @@
 name: CI
 
 on:
+  # Every branch, not just main. With "never commit directly to main" as the
+  # rule, a main-only trigger would mean CI effectively never runs before
+  # review — which is backwards: the branch is exactly where it should run.
   push:
-    branches: [main]
   pull_request:
     branches: [main]
 
