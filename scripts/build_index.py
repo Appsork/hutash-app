@@ -44,7 +44,12 @@ SECTIONS = {
 }
 
 # Raw-content base for absolute URLs that consumers still resolve eagerly.
-RAW_BASE = "https://raw.githubusercontent.com/Appsork/hutash-public/main"
+# NOTE: this repo has not actually been renamed/moved to hutash-public — that
+# repo does not exist on GitHub (confirmed 404 at the repo root). This was set
+# prematurely for an unfinished rename; every package_url in the generated
+# index was broken from the commit that introduced this constant. Point at
+# the repo this actually lives in until a real rename happens.
+RAW_BASE = "https://raw.githubusercontent.com/Appsork/hutash-app/main"
 
 
 def read_manifest(path: Path) -> dict[str, Any]:
