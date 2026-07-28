@@ -1,21 +1,30 @@
 #!/usr/bin/env python3
 """Generate the root ``index.json`` from what is actually on disk.
 
-One browse index for every consumer, built by scanning ``pipelines/``, ``apps/``
-and ``community/`` and reading each ``.hutash`` manifest — so the index can never
-claim a package that is not there, and a new package is published by dropping
-the file in and re-running this.
+One discovery index for every consumer, built by scanning ``pipelines/``,
+``apps/`` and ``plugins/`` (future) and reading each ``.hutash``'s
+``manifest.yaml`` for identity — so the index can never claim a package that
+is not there, and a new package is published by dropping the file in and
+re-running this.
+
+The index answers exactly one question: what packages exist, and where is
+each one's ``.hutash`` file? Nothing else. Every other fact about a package —
+name, version, license, quality score, description, the UI contract — lives
+in that package's own ``manifest.yaml`` (``docs/HUTASH_FORMAT.md``'s
+three-layer format); this script never copies those fields into the index,
+so there is nothing here that can drift out of sync with the package it
+describes. See HUTASH_FORMAT.md's "Package Registry — index.json".
 
 Two on-disk forms are read, because both exist in this repo:
 
-- **v2.0 package** — a zip whose ``manifest.yaml`` carries identity.
+- **v2.0+ package** — a zip whose ``manifest.yaml`` carries identity.
 - **flat YAML** — a single document (the older third-party declarations).
 
-Display fields the manifests do not carry (modality, quality score, weight
-provenance…) come from the previous ``catalogue/catalogue.json``, which this
-index replaces. That file is the historical source for pipeline metadata; once
-it is gone the values live here, and this script preserves whatever it finds in
-the existing index so a regeneration is never lossy.
+``modalities`` and ``features`` are Studio's UI-routing tables — not
+per-package data, so they have no home in any single ``manifest.yaml``.
+They ride alongside ``packages`` at the index's top level, carried forward
+from whatever the currently-committed index already has (there is nothing
+else to source them from once they are written once).
 
 Usage:  python scripts/build_index.py [--check]
 
@@ -35,12 +44,15 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "index.json"
-LEGACY_CATALOGUE = ROOT / "catalogue" / "catalogue.json"
 
-SECTIONS = {
-    "pipelines": ROOT / "pipelines",
-    "apps": ROOT / "apps",
-    "community": ROOT / "community",
+# Section name -> (folder, package type). "community" isn't its own type —
+# third-party apps published there are applications like anything in apps/;
+# only the folder they're grouped under differs.
+SECTIONS: dict[str, tuple[Path, str]] = {
+    "pipelines": (ROOT / "pipelines", "pipeline"),
+    "apps": (ROOT / "apps", "application"),
+    "community": (ROOT / "community", "application"),
+    "plugins": (ROOT / "plugins", "plugin"),  # future — empty until any ship
 }
 
 # Raw-content base for absolute URLs that consumers still resolve eagerly.
@@ -66,125 +78,74 @@ def read_manifest(path: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
-def human_size(gb: float | None) -> str:
-    """Size for a browse listing: '500 MB' / '1.4 GB'. Empty when unknown."""
-    if not gb or gb <= 0:
-        return ""
-    if gb < 1:
-        return f"{int(round(gb * 1024))} MB"
-    return f"{gb:.1f} GB".replace(".0 GB", " GB")
+def category_for(manifest: dict[str, Any], package_type: str) -> str:
+    """The index's coarse `category` field for one package.
+
+    Pipelines: `metadata.weight_category` when the manifest declares one
+    (matches docs/ARCHITECTURE.md's categorised weights layout — "audio",
+    "LLM", …), else the modality of its first capability, else "pipeline".
+
+    Applications: `metadata.category` (the real display category — "photo",
+    "creative", …; the manifest's own top-level `category` is usually just
+    the literal string "app" and not useful for grouping), else "app".
+    """
+    meta = manifest.get("metadata") or {}
+    if package_type == "pipeline":
+        weight_category = meta.get("weight_category")
+        if weight_category:
+            return str(weight_category)
+        caps = manifest.get("capabilities") or []
+        if caps and isinstance(caps[0], dict) and caps[0].get("modality"):
+            return str(caps[0]["modality"])
+        return "pipeline"
+    return str(meta.get("category") or "app")
 
 
-def legacy_models() -> dict[str, dict[str, Any]]:
-    """Pipeline metadata from the catalogue.json this index replaces."""
-    if not LEGACY_CATALOGUE.is_file():
-        return {}
-    data = json.loads(LEGACY_CATALOGUE.read_text(encoding="utf-8"))
-    return {m["id"]: m for m in data.get("models", []) if m.get("id")}
+def entry_for(path: Path, section: str, package_type: str) -> dict[str, Any]:
+    """One minimal index entry: id, type, category, and where to find it.
+
+    No display or install metadata — that all lives in the package's own
+    manifest.yaml, which a consumer reads directly (see HUTASH_FORMAT.md).
+    """
+    manifest = read_manifest(path)
+    app_id = str(manifest.get("id") or path.stem)
+    return {
+        "id": app_id,
+        "type": package_type,
+        "category": category_for(manifest, package_type),
+        "hutash": f"{section}/{path.name}",
+    }
 
 
 def legacy_blocks() -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    """`modalities` + `features` — Studio's UI routing, carried across verbatim."""
-    if LEGACY_CATALOGUE.is_file():
-        data = json.loads(LEGACY_CATALOGUE.read_text(encoding="utf-8"))
-        return data.get("modalities", {}), data.get("features", [])
+    """`modalities` + `features` — Studio's UI routing, carried across verbatim.
+
+    Neither has a per-package home, so once written they are simply carried
+    forward from whatever is already committed. Edit them directly in
+    index.json (or via a future dedicated file) — this script never
+    regenerates their content, only preserves it across a rebuild.
+    """
     if INDEX.is_file():
         data = json.loads(INDEX.read_text(encoding="utf-8"))
         return data.get("modalities", {}), data.get("features", [])
     return {}, []
 
 
-def entry_for(path: Path, section: str, prior: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    """One index entry: manifest identity, enriched with prior metadata."""
-    manifest = read_manifest(path)
-    app_id = str(manifest.get("id") or path.stem)
-    old = prior.get(app_id, {})
-    meta = manifest.get("metadata") or {}
-
-    description = (
-        manifest.get("description")
-        or meta.get("description")
-        or old.get("description")
-        or ""
-    )
-    license_ = manifest.get("license") or old.get("license") or ""
-    name = manifest.get("name") or old.get("display_name") or app_id
-    rel = f"{section}/{path.name}"
-
-    entry: dict[str, Any] = {
-        "id": app_id,
-        "name": name,
-        "description": description,
-        # `type` is the browse-level kind. Pipelines keep their modality (tts,
-        # stt, music, clone) because that is what the Studio marketplace filters
-        # on; everything else is an "app" — the manifests spell that
-        # "application" or "app" interchangeably, so it is normalised here.
-        "type": (
-            old.get("modality")
-            if section == "pipelines"
-            else "app"
-        ) or manifest.get("type") or "app",
-        "license": license_,
-        "size_display": human_size(old.get("disk_size_gb")),
-        "hutash_file": rel,
-        # Kept for consumers that join on a bare filename rather than a path.
-        "file": path.name,
-    }
-
-    if section == "pipelines":
-        # Fields Studio's catalogue validator and installer require. Absent
-        # values are omitted rather than guessed — a wrong version or hash is
-        # worse than a missing one.
-        entry["display_name"] = old.get("display_name") or name
-        entry["modality"] = old.get("modality", "")
-        entry["version"] = manifest.get("version") or old.get("version") or ""
-        # The installable package now lives under pipelines/.
-        entry["package_url"] = f"{RAW_BASE}/{rel}"
-        for key in (
-            "weight_category",
-            "min_vram_gb",
-            "disk_size_gb",
-            "hf_repo",
-            "hf_revision",
-            "weights_external",
-            "allow_patterns",
-            "quality_score",
-            "requires_aura",
-            "docker_image",
-            "ghcr_image",
-        ):
-            if key in old:
-                entry[key] = old[key]
-
-    if section == "community":
-        # Externally-managed apps carry their reason so the OS can badge them.
-        if meta.get("managed_externally"):
-            entry["managed_externally"] = True
-            entry["advanced_reason"] = meta.get("advanced_reason", "")
-
-    return entry
-
-
 def build() -> dict[str, Any]:
-    prior = legacy_models()
-    if not prior and INDEX.is_file():
-        # Regenerating after catalogue.json is gone: the index is its own prior.
-        current = json.loads(INDEX.read_text(encoding="utf-8"))
-        prior = {e["id"]: e for e in current.get("pipelines", []) if e.get("id")}
-
     modalities, features = legacy_blocks()
-    out: dict[str, Any] = {
+    packages: list[dict[str, Any]] = []
+    for section, (folder, package_type) in SECTIONS.items():
+        if not folder.is_dir():
+            continue
+        for p in sorted(folder.glob("*.hutash")):
+            packages.append(entry_for(p, section, package_type))
+
+    return {
         "version": "1.0",
         "modalities": modalities,
         "features": features,
+        "packages": packages,
     }
-    for section, folder in SECTIONS.items():
-        entries = [
-            entry_for(p, section, prior)
-            for p in sorted(folder.glob("*.hutash"))
-        ]
-        out[section] = entries
-    return out
 
 
 def main() -> int:
@@ -206,8 +167,11 @@ def main() -> int:
         return 0
 
     INDEX.write_text(text, encoding="utf-8")
-    counts = ", ".join(f"{k} {len(built[k])}" for k in SECTIONS)
-    print(f"wrote {INDEX.relative_to(ROOT)} — {counts}")
+    by_type: dict[str, int] = {}
+    for pkg in built["packages"]:
+        by_type[pkg["type"]] = by_type.get(pkg["type"], 0) + 1
+    counts = ", ".join(f"{k} {v}" for k, v in sorted(by_type.items()))
+    print(f"wrote {INDEX.relative_to(ROOT)} — {len(built['packages'])} packages ({counts})")
     return 0
 
 
