@@ -38,18 +38,25 @@ jobs:
           import json, sys
           from pathlib import Path
 
+          # build_index.py's actual schema (build()): one flat "packages" list,
+          # each entry carrying its relative path in "hutash" — NOT split into
+          # per-section "pipelines"/"apps"/"community" arrays, and NOT
+          # "hutash_file". Those were the previous (pre-05a773b) field names;
+          # this check was never updated after the rename, so it silently
+          # iterated three always-empty lists and verified nothing.
           index = json.loads(Path("index.json").read_text(encoding="utf-8"))
           missing = []
-          for section in ("pipelines", "apps", "community"):
-              for entry in index.get(section, []):
-                  if not Path(entry["hutash_file"]).is_file():
-                      missing.append(f"{section}/{entry['id']} -> {entry['hutash_file']}")
+          for entry in index.get("packages", []):
+              if not Path(entry["hutash"]).is_file():
+                  missing.append(f"{entry['id']} -> {entry['hutash']}")
           if missing:
               print("index references packages that do not exist:")
               print("\n".join(f"  {m}" for m in missing))
               sys.exit(1)
 
-          counts = {s: len(index.get(s, [])) for s in ("pipelines", "apps", "community")}
+          counts: dict[str, int] = {}
+          for entry in index.get("packages", []):
+              counts[entry["type"]] = counts.get(entry["type"], 0) + 1
           print("index OK:", counts)
           if not index.get("features") or not index.get("modalities"):
               print("index is missing the features/modalities blocks Studio reads")
