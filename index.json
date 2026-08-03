@@ -122,7 +122,7 @@
       "version": "1.0.4",
       "license": "MIT",
       "min_vram_gb": 6.0,
-      "disk_size_gb": 10.8,
+      "disk_size_gb": 3.2,
       "quality_score": 0.9,
       "speed": null,
       "modality": "clone",
@@ -130,7 +130,13 @@
       "internal": false,
       "hf_repo": "ResembleAI/chatterbox",
       "hf_revision": "ef85ce7bef2f3f1a74d0d837d379d2fcb68203cd",
-      "allow_patterns": null,
+      "allow_patterns": [
+        "ve.safetensors",
+        "t3_cfg.safetensors",
+        "s3gen.safetensors",
+        "tokenizer.json",
+        "conds.pt"
+      ],
       "weights_external": true
     },
     {
@@ -143,7 +149,7 @@
       "version": "1.0.3",
       "license": "Apache-2.0",
       "min_vram_gb": 6.0,
-      "disk_size_gb": 17.2,
+      "disk_size_gb": 6.7,
       "quality_score": 0.91,
       "speed": null,
       "modality": "clone",
@@ -151,7 +157,17 @@
       "internal": false,
       "hf_repo": "nari-labs/Dia-1.6B-0626",
       "hf_revision": "ef2795fcc29c5abe6ffc91fd33808588b49bbc66",
-      "allow_patterns": null,
+      "allow_patterns": [
+        "config.json",
+        "generation_config.json",
+        "audio_tokenizer_config.json",
+        "preprocessor_config.json",
+        "special_tokens_map.json",
+        "tokenizer_config.json",
+        "model.safetensors.index.json",
+        "model-00001-of-00002.safetensors",
+        "model-00002-of-00002.safetensors"
+      ],
       "weights_external": true
     },
     {
@@ -185,7 +201,7 @@
       "version": "1.0.4",
       "license": "Apache-2.0",
       "min_vram_gb": 0,
-      "disk_size_gb": 1.0,
+      "disk_size_gb": 0.4,
       "quality_score": 0.88,
       "speed": null,
       "modality": "tts",
@@ -193,7 +209,11 @@
       "internal": false,
       "hf_repo": "hexgrad/Kokoro-82M",
       "hf_revision": "f3ff3571791e39611d31c381e3a41a3af07b4987",
-      "allow_patterns": null,
+      "allow_patterns": [
+        "config.json",
+        "kokoro-v1_0.pth",
+        "voices/*.pt"
+      ],
       "weights_external": true
     },
     {
@@ -227,7 +247,7 @@
       "version": "1.0.3",
       "license": "Apache-2.0",
       "min_vram_gb": 0,
-      "disk_size_gb": 1.6,
+      "disk_size_gb": 1.1,
       "quality_score": 0.85,
       "speed": null,
       "modality": "llm",
@@ -235,7 +255,9 @@
       "internal": true,
       "hf_repo": "unsloth/Qwen3-1.7B-GGUF",
       "hf_revision": "d7f544eead698dbd1f15126ef60b45a1e1933222",
-      "allow_patterns": null,
+      "allow_patterns": [
+        "Qwen3-1.7B-Q4_K_M.gguf"
+      ],
       "weights_external": true
     },
     {
