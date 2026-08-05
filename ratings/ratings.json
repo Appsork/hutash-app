@@ -124,10 +124,10 @@
       "user_count": 0
     },
     "prompt-engine": {
-      "hutash_score": null,
-      "speed_score": null,
+      "hutash_score": 7.0,
+      "speed_score": 8.5,
       "benchmark": null,
-      "note": "Internal tool — not rated",
+      "note": "Qwen3 1.7B (Q8_0 GGUF, CPU-only) — general-purpose LLM, no longer an internal-only tool. Scores are engineering estimates from the model's specs (1.7B parameters, INT8 quantization, CPU inference via llama.cpp) rather than a formal benchmark run — replace with real numbers if Qwen publishes official MMLU/benchmark results for this checkpoint.",
       "hf_likes": null,
       "user_score": null,
       "user_count": 0

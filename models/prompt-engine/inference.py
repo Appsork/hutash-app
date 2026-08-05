@@ -22,7 +22,7 @@ class PromptEngineInference(Inference):
         # Weights-out: the GGUF is no longer baked at /app/models. It is
         # downloaded at install time and mounted; resolve_local_weights_dir
         # returns the pinned snapshot dir, whose root holds the single
-        # *.gguf file (allow_patterns keeps only Qwen3-1.7B-Q4_K_M.gguf).
+        # *.gguf file (allow_patterns keeps only Qwen3-1.7B-Q8_0.gguf).
         weights_dir = resolve_local_weights_dir(self.model_id)
         model_files = glob.glob(os.path.join(weights_dir, "*.gguf"))
         if not model_files:
