@@ -110,7 +110,8 @@
       "hf_repo": "ACE-Step/ACE-Step-v1-3.5B",
       "hf_revision": "82cd0d7b6322bd28cd4e830fe675ddb6180ce36c",
       "allow_patterns": null,
-      "weights_external": true
+      "weights_external": true,
+      "low_vram_capable": true
     },
     {
       "id": "chatterbox",
@@ -137,7 +138,8 @@
         "tokenizer.json",
         "conds.pt"
       ],
-      "weights_external": true
+      "weights_external": true,
+      "low_vram_capable": false
     },
     {
       "id": "dia-1.6b",
@@ -168,7 +170,8 @@
         "model-00001-of-00002.safetensors",
         "model-00002-of-00002.safetensors"
       ],
-      "weights_external": true
+      "weights_external": true,
+      "low_vram_capable": false
     },
     {
       "id": "distil-whisper-large-v3",
@@ -235,7 +238,8 @@
       "hf_repo": "parler-tts/parler-tts-mini-v1.1",
       "hf_revision": "fbb2dd281092c5b414ef29cf9d8895f386f1feef",
       "allow_patterns": null,
-      "weights_external": true
+      "weights_external": true,
+      "low_vram_capable": true
     },
     {
       "id": "prompt-engine",
@@ -258,7 +262,8 @@
       "allow_patterns": [
         "Qwen3-1.7B-Q8_0.gguf"
       ],
-      "weights_external": true
+      "weights_external": true,
+      "low_vram_capable": true
     },
     {
       "id": "whisper-large-v3",

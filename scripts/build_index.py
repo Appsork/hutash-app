@@ -133,7 +133,7 @@ def display_fields(manifest: dict[str, Any], weights: dict[str, Any]) -> dict[st
     sources = weights.get("sources") or []
     first_source = sources[0] if sources and isinstance(sources[0], dict) else {}
 
-    return {
+    entry = {
         "name": str(manifest.get("name") or ""),
         "description": str(manifest.get("description") or meta.get("description") or ""),
         "version": str(manifest.get("version") or ""),
@@ -150,6 +150,16 @@ def display_fields(manifest: dict[str, Any], weights: dict[str, Any]) -> dict[st
         "allow_patterns": first_source.get("allow_patterns"),
         "weights_external": bool(sources),
     }
+    # low_vram_capable is the one deliberate exception to "every field
+    # defaults, never omitted" above: whether a too-big-for-VRAM model can
+    # offload across GPU + RAM (HuggingFace device_map="auto", llama.cpp
+    # n_gpu_layers) is genuinely inapplicable for a CPU-only/CPU-fallback
+    # model, not "false" — so the manifest omits the key entirely for those,
+    # and this only appears in the index when the manifest actually declares
+    # it, rather than being defaulted.
+    if "low_vram_capable" in manifest:
+        entry["low_vram_capable"] = bool(manifest["low_vram_capable"])
+    return entry
 
 
 def category_for(manifest: dict[str, Any], package_type: str) -> str:
